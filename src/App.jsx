@@ -25,7 +25,7 @@ export default function App(){
   const[loading,setLoading]=useState(true);const[saveErr,setSaveErr]=useState(false)
   const[admin,setAdmin]=useState(false);const[codeOpen,setCodeOpen]=useState(false)
   const[code,setCode]=useState('');const[codeErr,setCodeErr]=useState(false)
-  const[showPanel,setShowPanel]=useState(false);const[copyFrom,setCopyFrom]=useState('')
+  const[showPanel,setShowPanel]=useState(false);const[copyFrom,setCopyFrom]=useState('');const[helpOpen,setHelpOpen]=useState(false)
   const[celebrate,setCelebrate]=useState(null);const pbr=useRef(new Set());const skr=useRef(false)
 
   const lp=useCallback(async()=>{const p=await sget('pool');if(p&&Array.isArray(p)&&p.length)setPool(p)},[])
@@ -75,14 +75,19 @@ export default function App(){
     /* ── overflowX:hidden מונע גלילה אופקית של הדף כולו ── */
     <div dir="rtl" style={{minHeight:'100vh',background:C.bg,fontFamily:ff,color:C.white,overflowX:'hidden'}}>
       <div style={{maxWidth:1060,margin:'0 auto',padding:'18px 12px 48px'}}>
-        <header style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:16}}>
+        <header style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:16,flexWrap:'wrap'}}>
           <div>
             <h1 style={{fontFamily:df,fontWeight:800,fontSize:28,lineHeight:1.1,color:C.white,margin:0}}>{'\u05dc\u05d5\u05d7 \u05d4\u05d9\u05e2\u05d3\u05d9\u05dd'}</h1>
             <div style={{color:C.gold,fontSize:13,fontWeight:600,marginTop:3}}>{'\u05e1\u05e0\u05d9\u05e3 \u05d4\u05de\u05e4\u05e8\u05e5 \u00b7 \u05d1\u05d9\u05e0\u05d2\u05d5 \u05d9\u05e2\u05d3\u05d9\u05dd \u05d9\u05d5\u05de\u05d9'}</div>
           </div>
+          <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+          <button onClick={()=>setHelpOpen(true)} title="הוראות שימוש" style={{display:'flex',alignItems:'center',gap:6,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'10px 13px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>
+            <span>{'\u2139\ufe0f'}</span><span>{'\u05d4\u05d5\u05e8\u05d0\u05d5\u05ea'}</span>
+          </button>
           <button onClick={()=>admin?setShowPanel(s=>!s):setCodeOpen(true)} style={{display:'flex',alignItems:'center',gap:8,background:admin?C.gold:C.panel,color:admin?C.panel2:C.goldSoft,border:`1px solid ${admin?C.gold:C.line}`,borderRadius:12,padding:'10px 15px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>
             <span>{admin?'\u2699\ufe0f':'\ud83d\udd12'}</span><span>{admin?'\u05e0\u05d9\u05d4\u05d5\u05dc':'\u05d0\u05d3\u05de\u05d9\u05df'}</span>
           </button>
+          </div>
         </header>
 
         <div style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:8,marginBottom:16}}>
@@ -116,6 +121,20 @@ export default function App(){
           <button onClick={openSummary} style={{display:'flex',alignItems:'center',gap:8,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'11px 18px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>{'📋 סיכום יום'}</button>
         </div>}
       </div>
+
+      {helpOpen&&<Ov onClose={()=>setHelpOpen(false)}>
+        <div style={{fontFamily:df,fontSize:20,fontWeight:800,marginBottom:14}}>{'\u2139\ufe0f \u05d4\u05d5\u05e8\u05d0\u05d5\u05ea \u05e9\u05d9\u05de\u05d5\u05e9'}</div>
+        <div style={{display:'flex',flexDirection:'column',gap:11,fontSize:14,lineHeight:1.6}}>
+          <div>{'\u2705 \u05dc\u05d7\u05e6\u05d5 \u05e2\u05dc \u05ea\u05d0 \u05db\u05d3\u05d9 \u05dc\u05e1\u05de\u05df \u05e9\u05d4\u05d9\u05e2\u05d3 \u05d1\u05d5\u05e6\u05e2. \u05dc\u05d7\u05d9\u05e6\u05d4 \u05e0\u05d5\u05e1\u05e4\u05ea \u05de\u05d1\u05d8\u05dc\u05ea.'}</div>
+          <div>{'\ud83d\udd04 \u05db\u05dc \u05e9\u05d9\u05e0\u05d5\u05d9 \u05e0\u05e9\u05de\u05e8 \u05d5\u05de\u05e1\u05ea\u05e0\u05db\u05e8\u05df \u05de\u05d9\u05d3 \u05dc\u05db\u05dc \u05d4\u05de\u05db\u05e9\u05d9\u05e8\u05d9\u05dd \u2014 \u05d0\u05d9\u05df \u05e6\u05d5\u05e8\u05da \u05dc\u05e9\u05de\u05d5\u05e8.'}</div>
+          <div>{'\ud83c\udfc6 \u05d4\u05e9\u05dc\u05de\u05ea \u05e9\u05d5\u05e8\u05d4 \u05de\u05dc\u05d0\u05d4 = \u05d1\u05d9\u05e0\u05d2\u05d5! \ud83c\udf89'}</div>
+          <div>{'\ud83d\udcc5 \u05db\u05dc \u05d1\u05d5\u05e7\u05e8 \u05e0\u05e4\u05ea\u05d7 \u05dc\u05d5\u05d7 \u05d7\u05d3\u05e9 \u05d0\u05d5\u05d8\u05d5\u05de\u05d8\u05d9\u05ea. \u05d9\u05de\u05d9 \u05e2\u05d1\u05e8 \u05e0\u05e9\u05de\u05e8\u05d9\u05dd \u05dc\u05e6\u05e4\u05d9\u05d9\u05d4 \u05d1\u05dc\u05d1\u05d3.'}</div>
+          <div>{'\ud83d\udcc5 \u05de\u05e2\u05d1\u05e8 \u05d1\u05d9\u05df \u05d9\u05de\u05d9\u05dd \u2014 \u05d3\u05e8\u05da \u05d1\u05d5\u05e8\u05e8 \u05d4\u05ea\u05d0\u05e8\u05d9\u05da \u05dc\u05de\u05e2\u05dc\u05d4.'}</div>
+          <div>{'\ud83d\udcf8 \u05e6\u05d9\u05dc\u05d5\u05dd \u05de\u05e1\u05da \u2014 \u05e9\u05d5\u05de\u05e8 \u05d0\u05d5 \u05de\u05e9\u05ea\u05e3 \u05ea\u05de\u05d5\u05e0\u05d4 \u05e9\u05dc \u05d4\u05dc\u05d5\u05d7.'}</div>
+          <div>{'\ud83d\udccb \u05e1\u05d9\u05db\u05d5\u05dd \u05d9\u05d5\u05dd \u2014 \u05d9\u05d5\u05e6\u05e8 \u05d8\u05e7\u05e1\u05d8 \u05e1\u05d9\u05db\u05d5\u05dd \u05dc\u05e9\u05dc\u05d9\u05d7\u05d4 \u05dc\u05e7\u05d1\u05d5\u05e6\u05d4.'}</div>
+        </div>
+        <button onClick={()=>setHelpOpen(false)} style={{width:'100%',marginTop:18,background:C.gold,color:C.panel2,border:'none',borderRadius:12,padding:12,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'\u05d4\u05d1\u05e0\u05ea\u05d9'}</button>
+      </Ov>}
 
       {codeOpen&&(<Ov onClose={()=>{setCodeOpen(false);setCode('');setCodeErr(false)}}>
         <div style={{fontFamily:df,fontSize:21,fontWeight:800,marginBottom:8}}>{'כניסת אדמין 🔐'}</div>
@@ -217,7 +236,14 @@ function AP({C,pool,date,copyFrom,setCopyFrom,onClose,onLock,onClearDay,onEditPo
           <div style={{fontFamily:display,fontSize:22,fontWeight:800,color:C.white}}>{'⚙️ ניהול הלוח'}</div>
           <button onClick={onClose} style={{background:'transparent',color:C.sub,border:'none',fontSize:24,cursor:'pointer'}}>{'×'}</button>
         </div>
-        <S C={C} t="הוספה והסרה"><p style={{color:C.sub,fontSize:13,lineHeight:1.6}}>{'כפתורי ＋ / − מופיעים ישירות מתחת ללוח (הוסף יעד / הוסף בנקאי) ובתוך תא השם (הסר בנקאי). לחץ על שם יעד לעריכה ישירה.'}</p></S>
+        <S C={C} t="📖 הוראות אדמין"><div style={{color:C.sub,fontSize:13,lineHeight:1.7,display:'flex',flexDirection:'column',gap:6}}>
+          <div>{'\u2022 \u05e2\u05e8\u05d9\u05db\u05ea \u05d9\u05e2\u05d3: \u05dc\u05d7\u05e5 \u05e2\u05dc \u05e9\u05dd \u05d4\u05d9\u05e2\u05d3 \u05d1\u05e8\u05d0\u05e9 \u05d4\u05e2\u05de\u05d5\u05d3\u05d4 \u05d5\u05d4\u05e7\u05dc\u05d3 \u05e9\u05dd \u05d7\u05d3\u05e9.'}</div>
+          <div>{'\u2022 \u05d4\u05d5\u05e1\u05e4\u05d4/\u05d4\u05e1\u05e8\u05d4: \u05db\u05e4\u05ea\u05d5\u05e8\u05d9 \uff0b \u05de\u05ea\u05d7\u05ea \u05dc\u05dc\u05d5\u05d7 (\u05d9\u05e2\u05d3 / \u05d1\u05e0\u05e7\u05d0\u05d9); \u2212 \u05d1\u05e8\u05d0\u05e9 \u05e2\u05de\u05d5\u05d3\u05ea \u05d9\u05e2\u05d3 \u05d5\u05d1\u05ea\u05d5\u05da \u05ea\u05d0 \u05d4\u05e9\u05dd (\u05d4\u05e1\u05e8 \u05d1\u05e0\u05e7\u05d0\u05d9).'}</div>
+          <div>{'\u2022 \u05e9\u05dd \u05d1\u05e0\u05e7\u05d0\u05d9 \u05dc\u05e9\u05d5\u05e8\u05d4: \u05d1\u05d7\u05e8 \u05de\u05d4\u05ea\u05e4\u05e8\u05d9\u05d8 \u05d4\u05e0\u05e4\u05ea\u05d7 \u05e9\u05d1\u05ea\u05d0 \u05d4\u05e9\u05dd.'}</div>
+          <div>{'\u2022 \u05de\u05d0\u05d2\u05e8 \u05e9\u05de\u05d5\u05ea: \uff0b \u05d4\u05d5\u05e1\u05e3 / \u2212 \u05d4\u05e1\u05e8 \u05dc\u05de\u05d8\u05d4 \u05d1\u05e4\u05d0\u05e0\u05dc \u2014 \u05de\u05e9\u05e4\u05d9\u05e2 \u05e2\u05dc \u05ea\u05e4\u05e8\u05d9\u05d8\u05d9 \u05d4\u05d1\u05d7\u05d9\u05e8\u05d4.'}</div>
+          <div>{'\u2022 \u05d9\u05de\u05d9 \u05e2\u05d1\u05e8: \u05e0\u05e2\u05d5\u05dc\u05d9\u05dd \u05dc\u05db\u05d5\u05dc\u05dd; \u05e8\u05e7 \u05d1\u05de\u05e6\u05d1 \u05d0\u05d3\u05de\u05d9\u05df \u05d0\u05e4\u05e9\u05e8 \u05dc\u05ea\u05e7\u05df \u05d1\u05d4\u05dd \u05e1\u05d9\u05de\u05d5\u05e0\u05d9\u05dd.'}</div>
+          <div>{'\u2022 \u05e1\u05d9\u05d5\u05dd: \"\ud83d\udd12 \u05e0\u05e2\u05d9\u05dc\u05ea \u05e0\u05d9\u05d4\u05d5\u05dc\" \u05d9\u05d5\u05e6\u05d0 \u05de\u05de\u05e6\u05d1 \u05d0\u05d3\u05de\u05d9\u05df.'}</div>
+        </div></S>
         <S C={C} t={`ניקוי סימונים · ${date}`}><button onClick={onClearDay} style={{width:'100%',background:C.panel2,color:'#F0C4BE',border:`1px solid ${C.line}`,borderRadius:12,padding:12,fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:f}}>{'🗑️ אפס כל התאים ל-❌'}</button></S>
         <S C={C} t="שכפול מבנה מתאריך אחר">
           <div style={{display:'flex',gap:8}}>
