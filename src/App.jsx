@@ -52,7 +52,7 @@ export default function App(){
   const ep=(i,v)=>{const n=[...pool];n[i]=v;setPool(n)}
   const cp=()=>{const nx=pool.filter(x=>x.trim()!=='');setPool(nx);sset('pool',nx)}
   async function csf(sd){if(!sd)return;const src=await sget(kf(sd));if(!src)return;await cm(b=>{b.targets=src.targets.map(t=>({...t}));b.rows=src.rows.map(r=>({...r}));b.cells={};return b})}
-  function tu(){if(code===AC){setAdmin(true);setCodeOpen(false);setCode('');setCodeErr(false);setShowPanel(true)}else setCodeErr(true)}
+  function tu(){if(code===AC){setAdmin(true);setCodeOpen(false);setCode('');setCodeErr(false)}else setCodeErr(true)}
 
   const st=board?(()=>{const tot=board.rows.length*board.targets.length;const dn=Object.keys(board.cells).length;const fl=board.rows.filter(r=>board.targets.length>0&&board.targets.every(t=>board.cells[`${r.id}::${t.id}`])).length;return{tot,dn,fl,pct:tot?Math.round((dn/tot)*100):0}})():null
   const df=`'Frank Ruhl Libre','Heebo',Georgia,serif`;const ff=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
