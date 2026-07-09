@@ -40,7 +40,7 @@ export default function App(){
   useEffect(()=>{lp()},[lp]);useEffect(()=>{lb(date,false)},[date,lb])
   useEffect(()=>{if(!board)return;const nb=new Set();board.rows.forEach(r=>{if(board.targets.length>0&&board.targets.every(t=>board.cells[`${r.id}::${t.id}`]))nb.add(r.id)});for(const rid of nb){if(!pbr.current.has(rid)){setCelebrate(rid);setTimeout(()=>setCelebrate(null),2500);break}};pbr.current=nb},[board])
 
-  async function tc(ri,ti){skr.current=true;const lt=(await sget(kf(date)))||board;const ck=`${ri}::${ti}`;const cells={...(lt.cells||{})};if(cells[ck])delete cells[ck];else cells[ck]=true;const nx={...lt,cells};setBoard(nx);const ok=await sset(kf(date),nx);setSaveErr(!ok);setTimeout(()=>{skr.current=false},1000)}
+  async function tc(ri,ti){if(date<ts()&&!admin)return;skr.current=true;const lt=(await sget(kf(date)))||board;const ck=`${ri}::${ti}`;const cells={...(lt.cells||{})};if(cells[ck])delete cells[ck];else cells[ck]=true;const nx={...lt,cells};setBoard(nx);const ok=await sset(kf(date),nx);setSaveErr(!ok);setTimeout(()=>{skr.current=false},1000)}
   async function cm(fn){skr.current=true;const lt=(await sget(kf(date)))||board;const nx=fn(JSON.parse(JSON.stringify(lt)));setBoard(nx);const ok=await sset(kf(date),nx);setSaveErr(!ok);setTimeout(()=>{skr.current=false},1000)}
   const at=()=>cm(b=>{b.targets.push({id:uid(),label:`\u05d9\u05e2\u05d3 ${b.targets.length+1}`});return b})
   const rt=tid=>cm(b=>{b.targets=b.targets.filter(t=>t.id!==tid);Object.keys(b.cells).forEach(k=>{if(k.endsWith(`::${tid}`))delete b.cells[k]});return b})
@@ -58,6 +58,7 @@ export default function App(){
 
   const st=board?(()=>{const tot=board.rows.length*board.targets.length;const dn=Object.keys(board.cells).length;const fl=board.rows.filter(r=>board.targets.length>0&&board.targets.every(t=>board.cells[`${r.id}::${t.id}`])).length;return{tot,dn,fl,pct:tot?Math.round((dn/tot)*100):0}})():null
   const df=`'Frank Ruhl Libre','Heebo',Georgia,serif`;const ff=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
+  const past=date<ts();const locked=past&&!admin
 
   const boardRef=useRef(null)
   const[sumOpen,setSumOpen]=useState(false);const[sumText,setSumText]=useState('');const[copied,setCopied]=useState(false)
@@ -98,13 +99,15 @@ export default function App(){
           {saveErr&&<div style={{background:'#3A1A1A',border:'1px solid #7A3A34',color:'#F0C4BE',borderRadius:10,padding:'8px 12px',fontSize:12}}>{'שגיאת שמירה ⚠️'}</div>}
         </div>
 
+        {board&&!loading&&past&&<div style={{background:locked?C.panel:'#2A2113',border:`1px solid ${locked?C.line:C.gold}`,color:locked?C.sub:C.gold,borderRadius:12,padding:'10px 14px',marginBottom:12,fontSize:13,fontWeight:600,textAlign:'center'}}>{locked?'🔒 יום עבר · לצפייה בלבד. להזזת סימונים היכנס לאדמין.':'✏️ מצב אדמין · עריכת יום עבר מאופשרת.'}</div>}
+
         {loading?<div style={{textAlign:'center',padding:60,color:C.sub}}>{'טוען…'}</div>:!board?
           <div style={{background:C.board,borderRadius:18,color:C.ink,padding:48,textAlign:'center'}}><div style={{fontSize:44,marginBottom:10}}>{'🗓️'}</div><div style={{fontWeight:700,fontSize:17}}>{'אין לוח לתאריך זה'}</div><div style={{color:C.sub,fontSize:14,marginTop:6}}>{'תאריך עבר שלא הוגדר בו לוח.'}</div></div>:
-          <div ref={boardRef}><Bo board={board} admin={admin} pool={pool} celebrate={celebrate} onToggle={tc} onRenameTarget={rnt} onRemoveTarget={rt} onRemoveRow={rr} onSetRowName={srn} onAddTarget={at} onAddRow={ar}/></div>
+          <div ref={boardRef}><Bo board={board} admin={admin} locked={locked} pool={pool} celebrate={celebrate} onToggle={tc} onRenameTarget={rnt} onRemoveTarget={rt} onRemoveRow={rr} onSetRowName={srn} onAddTarget={at} onAddRow={ar}/></div>
         }
 
         <div style={{display:'flex',justifyContent:'center',gap:20,marginTop:18,color:C.sub,fontSize:12}}>
-          <span>{'❌ לחץ לסימון'}</span><span>{'✅ לחץ לביטול'}</span>
+          {!locked&&<><span>{'❌ לחץ לסימון'}</span><span>{'✅ לחץ לביטול'}</span></>}
           {admin&&<span style={{color:C.goldSoft}}>{'✏️ לחץ על שם יעד לעריכה'}</span>}
         </div>
 
@@ -138,7 +141,7 @@ export default function App(){
 }
 
 /* ══ BOARD ══ */
-function Bo({board,admin,pool,celebrate,onToggle,onRenameTarget,onRemoveTarget,onRemoveRow,onSetRowName,onAddTarget,onAddRow}){
+function Bo({board,admin,locked,pool,celebrate,onToggle,onRenameTarget,onRemoveTarget,onRemoveRow,onSetRowName,onAddTarget,onAddRow}){
   /* תאים קומפקטיים לנייד */
   const NW=admin?108:110, CW=58
   const cols=`${NW}px repeat(${board.targets.length},${CW}px)`
@@ -185,7 +188,7 @@ function Bo({board,admin,pool,celebrate,onToggle,onRenameTarget,onRemoveTarget,o
               {/* תאי יעדים */}
               {board.targets.map(t=>{
                 const done=!!board.cells[`${r.id}::${t.id}`]
-                return<button key={t.id} onClick={()=>onToggle(r.id,t.id)} style={{height:54,borderRadius:12,cursor:'pointer',background:done?C.doneBg:C.pendBg,border:`2px solid ${done?C.doneBd:C.pendBd}`,fontSize:22,display:'flex',alignItems:'center',justifyContent:'center',transition:'transform .1s ease'}} onMouseDown={e=>e.currentTarget.style.transform='scale(.88)'} onMouseUp={e=>e.currentTarget.style.transform='scale(1)'} onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>{done?'✅':'❌'}</button>
+                return<button key={t.id} onClick={locked?undefined:()=>onToggle(r.id,t.id)} style={{height:54,borderRadius:12,cursor:locked?'default':'pointer',background:done?C.doneBg:C.pendBg,border:`2px solid ${done?C.doneBd:C.pendBd}`,fontSize:22,display:'flex',alignItems:'center',justifyContent:'center',transition:'transform .1s ease'}} onMouseDown={e=>!locked&&(e.currentTarget.style.transform='scale(.88)')} onMouseUp={e=>e.currentTarget.style.transform='scale(1)'} onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>{done?'✅':'❌'}</button>
               })}
             </RF>)
           })}
