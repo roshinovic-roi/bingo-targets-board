@@ -51,6 +51,8 @@ export default function App(){
   const cd=()=>cm(b=>{b.cells={};return b})
   const ep=(i,v)=>{const n=[...pool];n[i]=v;setPool(n)}
   const cp=()=>{const nx=pool.filter(x=>x.trim()!=='');setPool(nx);sset('pool',nx)}
+  const pAdd=()=>setPool(p=>[...p,''])
+  const pDel=i=>{const n=pool.filter((_,x)=>x!==i);setPool(n);sset('pool',n)}
   async function csf(sd){if(!sd)return;const src=await sget(kf(sd));if(!src)return;await cm(b=>{b.targets=src.targets.map(t=>({...t}));b.rows=src.rows.map(r=>({...r}));b.cells={};return b})}
   function tu(){if(code===AC){setAdmin(true);setCodeOpen(false);setCode('');setCodeErr(false)}else setCodeErr(true)}
 
@@ -120,7 +122,7 @@ export default function App(){
         <button onClick={tu} style={{width:'100%',marginTop:16,background:C.gold,color:C.panel2,border:'none',borderRadius:12,padding:'13px',fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'כניסה'}</button>
       </Ov>)}
 
-      {admin&&showPanel&&<AP C={C} pool={pool} date={date} copyFrom={copyFrom} setCopyFrom={setCopyFrom} onClose={()=>setShowPanel(false)} onLock={()=>{setAdmin(false);setShowPanel(false)}} onClearDay={cd} onEditPoolName={ep} onCommitPool={cp} onCopyStructure={csf} display={df}/>}
+      {admin&&showPanel&&<AP C={C} pool={pool} date={date} copyFrom={copyFrom} setCopyFrom={setCopyFrom} onClose={()=>setShowPanel(false)} onLock={()=>{setAdmin(false);setShowPanel(false)}} onClearDay={cd} onEditPoolName={ep} onCommitPool={cp} onAddPool={pAdd} onRemovePool={pDel} onCopyStructure={csf} display={df}/>}
 
       {sumOpen&&<Ov onClose={()=>setSumOpen(false)}>
         <div style={{fontFamily:df,fontSize:20,fontWeight:800,marginBottom:6}}>{'📋 סיכום היום'}</div>
@@ -203,7 +205,7 @@ function Bo({board,admin,pool,celebrate,onToggle,onRenameTarget,onRemoveTarget,o
 const RF=({children})=><>{children}</>
 
 /* ══ ADMIN PANEL ══ */
-function AP({C,pool,date,copyFrom,setCopyFrom,onClose,onLock,onClearDay,onEditPoolName,onCommitPool,onCopyStructure,display}){
+function AP({C,pool,date,copyFrom,setCopyFrom,onClose,onLock,onClearDay,onEditPoolName,onCommitPool,onAddPool,onRemovePool,onCopyStructure,display}){
   const f=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
   return(
     <div style={{position:'fixed',inset:0,zIndex:40,background:'rgba(0,0,0,.6)',display:'flex',justifyContent:'flex-start'}} onClick={onClose}>
@@ -223,7 +225,13 @@ function AP({C,pool,date,copyFrom,setCopyFrom,onClose,onLock,onClearDay,onEditPo
         </S>
         <S C={C} t="מאגר שמות הבנקאים">
           <div style={{display:'flex',flexDirection:'column',gap:8}}>
-            {pool.map((n,i)=><input key={i} value={n} onChange={e=>onEditPoolName(i,e.target.value)} onBlur={onCommitPool} style={{background:C.panel2,color:C.white,border:`1px solid ${C.line}`,borderRadius:10,padding:'10px 13px',fontFamily:f,fontSize:14,outline:'none'}}/>)}
+            {pool.map((n,i)=>(
+              <div key={i} style={{display:'flex',gap:8,alignItems:'center'}}>
+                <input value={n} autoFocus={n===''} onChange={e=>onEditPoolName(i,e.target.value)} onBlur={onCommitPool} placeholder="שם בנקאי" style={{flex:1,background:C.panel2,color:C.white,border:`1px solid ${C.line}`,borderRadius:10,padding:'10px 13px',fontFamily:f,fontSize:14,outline:'none'}}/>
+                {pool.length>1&&<button onClick={()=>onRemovePool(i)} aria-label="הסר בנקאי" style={{flexShrink:0,width:42,height:42,background:'transparent',color:'#F0C4BE',border:`1px solid ${C.line}`,borderRadius:10,fontSize:22,fontWeight:800,lineHeight:1,cursor:'pointer'}}>{'−'}</button>}
+              </div>
+            ))}
+            <button onClick={onAddPool} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,background:'transparent',color:C.gold,border:`1.5px dashed ${C.gold}`,borderRadius:10,padding:'11px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:f}}>{'＋ הוסף בנקאי'}</button>
           </div>
           <p style={{color:C.sub,fontSize:12,marginTop:8}}>{'שמות אלה מופיעים בתפריט הבחירה של כל שורה.'}</p>
         </S>
