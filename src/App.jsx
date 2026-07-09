@@ -87,6 +87,9 @@ export default function App(){
           <button onClick={()=>admin?setShowPanel(s=>!s):setCodeOpen(true)} style={{display:'flex',alignItems:'center',gap:8,background:admin?C.gold:C.panel,color:admin?C.panel2:C.goldSoft,border:`1px solid ${admin?C.gold:C.line}`,borderRadius:12,padding:'10px 15px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>
             <span>{admin?'\u2699\ufe0f':'\ud83d\udd12'}</span><span>{admin?'\u05e0\u05d9\u05d4\u05d5\u05dc':'\u05d0\u05d3\u05de\u05d9\u05df'}</span>
           </button>
+          {admin&&<button onClick={()=>{setAdmin(false);setShowPanel(false)}} title="\u05d9\u05e6\u05d9\u05d0\u05d4 \u05de\u05de\u05e6\u05d1 \u05d0\u05d3\u05de\u05d9\u05df" style={{display:'flex',alignItems:'center',gap:6,background:'transparent',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:'10px 13px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>
+            <span>{'\ud83d\udd13'}</span><span>{'\u05d9\u05e6\u05d9\u05d0\u05d4'}</span>
+          </button>}
           </div>
         </header>
 
