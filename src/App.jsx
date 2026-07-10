@@ -5,7 +5,9 @@ const sb=createClient('https://ftfaporbookulrspamjn.supabase.co','eyJhbGciOiJIUz
 async function sget(k){const{data}=await sb.from('bingo_kv').select('value').eq('key',k).maybeSingle();return data?.value??null}
 async function sset(k,v){const{error}=await sb.from('bingo_kv').upsert({key:k,value:v,updated_at:new Date().toISOString()});return!error}
 async function slist(p){const{data}=await sb.from('bingo_kv').select('key').like('key',`${p}%`);return(data||[]).map(d=>d.key)}
-const DP=['\u05de\u05d5\u05e8\u05df','\u05d3\u05d5\u05e8','\u05e9\u05e8\u05d9\u05ea','\u05d0\u05d1\u05d0\u05dc','\u05d0\u05d9\u05e0\u05d0\u05e1','\u05d0\u05dc\u05d9\u05d0\u05df','\u05d1\u05e8']
+async function sdel(pref){const{error}=await sb.from('bingo_kv').delete().like('key',`${pref}%`);return!error}
+const DP=['\u05d1\u05e0\u05e7\u05d0\u05d9 1','\u05d1\u05e0\u05e7\u05d0\u05d9 2','\u05d1\u05e0\u05e7\u05d0\u05d9 3']
+const MASTER='ROI-2103'
 const C={bg:'#0E1B2E',panel:'#13253C',panel2:'#0B1626',board:'#F6F2E7',ink:'#16283C',sub:'#66788A',gold:'#C7A24A',goldSoft:'#E7D7A6',line:'#263B54',boardLine:'#E0D8C4',pendBg:'#F4E0DC',pendBd:'#E3B6AE',pend:'#B8433A',doneBg:'#DCEEDF',doneBd:'#A4D2AF',done:'#2E9E5B',white:'#FBF9F3'}
 const uid=()=>Math.random().toString(36).slice(2,9)
 const ts=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
@@ -33,7 +35,7 @@ function Landing({C,df,ff}){
   const inp={width:'100%',boxSizing:'border-box',background:C.panel2,color:C.white,border:`1px solid ${C.line}`,borderRadius:12,padding:'13px 14px',fontFamily:ff,fontSize:15,outline:'none',marginTop:10,direction:'rtl'}
   const btn=p=>({width:'100%',background:p?C.gold:'transparent',color:p?C.panel2:C.goldSoft,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:13,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff,marginTop:12})
   const go=n=>{location.href='/s/'+encodeURIComponent(n)}
-  async function create(){setErr('');const nn=num.replace(/\D/g,'');if(!nn){setErr('\u05d4\u05d6\u05df \u05de\u05e1\u05e4\u05e8 \u05e1\u05e0\u05d9\u05e3 (\u05e1\u05e4\u05e8\u05d5\u05ea)');return}if(!name.trim()){setErr('\u05d4\u05d6\u05df \u05e9\u05dd \u05e1\u05e0\u05d9\u05e3');return}if(code.length<3){setErr('\u05e7\u05d5\u05d3 \u05d0\u05d3\u05de\u05d9\u05df \u2014 \u05dc\u05e4\u05d7\u05d5\u05ea 3 \u05ea\u05d5\u05d5\u05d9\u05dd');return}setBusy(true);const ex=await sget(mk(nn));if(ex){setBusy(false);setErr(`\u05e1\u05e0\u05d9\u05e3 ${nn} \u05db\u05d1\u05e8 \u05ea\u05e4\u05d5\u05e1 \u2014 \u05d1\u05d7\u05e8 \u05de\u05e1\u05e4\u05e8 \u05d0\u05d7\u05e8`);return}const ok=await sset(mk(nn),{name:name.trim(),code,createdAt:new Date().toISOString()});setBusy(false);if(!ok){setErr('\u05e9\u05d2\u05d9\u05d0\u05ea \u05e9\u05de\u05d9\u05e8\u05d4, \u05e0\u05e1\u05d4 \u05e9\u05d5\u05d1');return}go(nn)}
+  async function create(){setErr('');const nn=num.replace(/\D/g,'');if(!nn){setErr('\u05d4\u05d6\u05df \u05de\u05e1\u05e4\u05e8 \u05e1\u05e0\u05d9\u05e3 (\u05e1\u05e4\u05e8\u05d5\u05ea)');return}if(!name.trim()){setErr('\u05d4\u05d6\u05df \u05e9\u05dd \u05e1\u05e0\u05d9\u05e3');return}if(code.length<3){setErr('\u05e7\u05d5\u05d3 \u05d0\u05d3\u05de\u05d9\u05df \u2014 \u05dc\u05e4\u05d7\u05d5\u05ea 3 \u05ea\u05d5\u05d5\u05d9\u05dd');return}setBusy(true);const ex=await sget(mk(nn));if(ex){setBusy(false);setErr(`\u05e1\u05e0\u05d9\u05e3 ${nn} \u05db\u05d1\u05e8 \u05ea\u05e4\u05d5\u05e1 \u2014 \u05d1\u05d7\u05e8 \u05de\u05e1\u05e4\u05e8 \u05d0\u05d7\u05e8`);return}const ok=await sset(mk(nn),{name:name.trim(),code,createdAt:new Date().toISOString(),setup:true});setBusy(false);if(!ok){setErr('\u05e9\u05d2\u05d9\u05d0\u05ea \u05e9\u05de\u05d9\u05e8\u05d4, \u05e0\u05e1\u05d4 \u05e9\u05d5\u05d1');return}go(nn)}
   function enter(){const nn=num.replace(/\D/g,'');if(!nn){setErr('\u05d4\u05d6\u05df \u05de\u05e1\u05e4\u05e8 \u05e1\u05e0\u05d9\u05e3');return}go(nn)}
   return(<div style={wrap}><div style={card}>
     <div style={{fontFamily:df,fontWeight:800,fontSize:26,textAlign:'center'}}>{'\ud83c\udfaf \u05dc\u05d5\u05d7 \u05d4\u05d9\u05e2\u05d3\u05d9\u05dd'}</div>
@@ -55,6 +57,67 @@ function NotFound({C,df,ff,branch}){
   </div>)
 }
 
+function Setup({C,df,ff,branch,meta,onDone}){
+  const[names,setNames]=useState(['','','',''])
+  const[busy,setBusy]=useState(false);const[err,setErr]=useState('')
+  const inp={flex:1,boxSizing:'border-box',background:C.panel2,color:C.white,border:`1px solid ${C.line}`,borderRadius:12,padding:'12px 14px',fontFamily:ff,fontSize:15,outline:'none',direction:'rtl'}
+  async function finish(){
+    const clean=names.map(n=>n.trim()).filter(Boolean)
+    if(clean.length<1){setErr('הזן לפחות שם בנקאי אחד');return}
+    setBusy(true)
+    const okP=await sset(pk(branch),clean)
+    const board={targets:[{id:uid(),label:'יעד 1'},{id:uid(),label:'יעד 2'},{id:uid(),label:'יעד 3'}],rows:clean.map(n=>({id:uid(),name:n})),cells:{}}
+    const okB=await sset(kf(branch,ts()),board)
+    const okM=await sset(mk(branch),{...meta,setup:false})
+    setBusy(false)
+    if(!(okP&&okB&&okM)){setErr('שגיאת שמירה, נסה שוב');return}
+    onDone()
+  }
+  return(<div style={{minHeight:'100vh',background:C.bg,color:C.white,fontFamily:ff,display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'40px 20px'}}>
+    <div style={{width:'100%',maxWidth:460,background:C.panel,border:`1px solid ${C.line}`,borderRadius:20,padding:24,boxSizing:'border-box'}}>
+      <div style={{fontFamily:df,fontWeight:800,fontSize:24,textAlign:'center'}}>{`👥 בנקאי ${meta.name}`}</div>
+      <div style={{color:C.sub,fontSize:13,textAlign:'center',marginTop:6,marginBottom:18}}>{'הגדירו את שמות הבנקאים בסניף. תמיד אפשר לשנות בהמשך במצב אדמין.'}</div>
+      <div style={{display:'flex',flexDirection:'column',gap:9}}>
+        {names.map((n,i)=>(<div key={i} style={{display:'flex',gap:8,alignItems:'center'}}>
+          <input style={inp} value={n} autoFocus={i===0} placeholder={'בנקאי '+(i+1)} onChange={e=>setNames(a=>a.map((x,j)=>j===i?e.target.value:x))}/>
+          {names.length>1&&<button onClick={()=>setNames(a=>a.filter((_,j)=>j!==i))} style={{flexShrink:0,width:42,height:42,background:'transparent',color:'#F0C4BE',border:`1px solid ${C.line}`,borderRadius:10,fontSize:22,fontWeight:800,cursor:'pointer',lineHeight:1}}>{'−'}</button>}
+        </div>))}
+        <button onClick={()=>setNames(a=>[...a,''])} style={{background:'transparent',color:C.gold,border:`1.5px dashed ${C.gold}`,borderRadius:10,padding:11,fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>{'＋ הוסף בנקאי'}</button>
+      </div>
+      {err&&<div style={{color:'#F0A9A0',fontSize:13,marginTop:12,textAlign:'center'}}>{err}</div>}
+      <button onClick={finish} disabled={busy} style={{width:'100%',marginTop:16,background:C.gold,color:C.panel2,border:'none',borderRadius:12,padding:14,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{busy?'שומר…':'שמור והתחל'}</button>
+    </div>
+  </div>)
+}
+
+function SuperAdmin({C,df,ff}){
+  const[ok,setOk]=useState(false);const[code,setCode]=useState('');const[err,setErr]=useState('');const[list,setList]=useState(null)
+  async function load(){setList(null);const keys=await slist('b:');const mkeys=keys.filter(k=>k.endsWith(':meta'));const items=[];for(const k of mkeys){const num=k.replace('b:','').replace(':meta','');const m=await sget(k);if(!m)continue;const days=(await slist(`b:${num}:board:`)).length;items.push({num,meta:m,days})}items.sort((a,b)=>String(a.meta.createdAt||'').localeCompare(String(b.meta.createdAt||'')));setList(items)}
+  function enter(){if(code===MASTER){setOk(true);load()}else setErr('קוד שגוי')}
+  async function del(num,name){if(!confirm(`למחוק לצמיתות את "${name}" (סניף ${num}) וכל הנתונים שלו? פעולה זו בלתי הפיכה.`))return;const okd=await sdel(`b:${num}:`);if(!okd){await sset(mk(num),null)}load()}
+  const wrap={minHeight:'100vh',background:C.bg,color:C.white,fontFamily:ff,padding:'30px 16px'}
+  if(!ok)return(<div style={{...wrap,display:'flex',alignItems:'center',justifyContent:'center'}}>
+    <div style={{width:'100%',maxWidth:380,background:C.panel,border:`1px solid ${C.line}`,borderRadius:20,padding:24,boxSizing:'border-box'}}>
+      <div style={{fontFamily:df,fontWeight:800,fontSize:22,textAlign:'center'}}>{'🛡️ אדמין-על'}</div>
+      <input type="password" value={code} onChange={e=>setCode(e.target.value)} onKeyDown={e=>e.key==='Enter'&&enter()} placeholder="קוד אדמין-על" style={{width:'100%',boxSizing:'border-box',marginTop:16,background:C.panel2,color:C.white,border:`1px solid ${C.line}`,borderRadius:12,padding:'13px',fontFamily:ff,fontSize:15,outline:'none',textAlign:'center',direction:'rtl'}}/>
+      {err&&<div style={{color:'#F0A9A0',fontSize:13,marginTop:10,textAlign:'center'}}>{err}</div>}
+      <button onClick={enter} style={{width:'100%',marginTop:12,background:C.gold,color:C.panel2,border:'none',borderRadius:12,padding:13,fontWeight:800,cursor:'pointer',fontFamily:ff}}>{'כניסה'}</button>
+    </div>
+  </div>)
+  return(<div style={{...wrap}}><div style={{maxWidth:760,margin:'0 auto'}}>
+    <div style={{fontFamily:df,fontWeight:800,fontSize:24,marginBottom:4}}>{'🛡️ ניהול סניפים'}</div>
+    <div style={{color:C.sub,fontSize:13,marginBottom:16}}>{list?`${list.length} סניפים במערכת`:'טוען…'}</div>
+    {list&&list.map(it=>(<div key={it.num} style={{background:C.panel,border:`1px solid ${C.line}`,borderRadius:14,padding:14,marginBottom:10,display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+      <div style={{flex:1,minWidth:150}}>
+        <div style={{fontWeight:800,fontSize:16}}>{`${it.meta.name||'—'} · #${it.num}`}</div>
+        <div style={{color:C.sub,fontSize:12,marginTop:3}}>{`קוד: ${it.meta.code||'—'} · ${it.days} ימים · ${String(it.meta.createdAt||'').slice(0,10)}`}</div>
+      </div>
+      <a href={`/s/${it.num}`} style={{background:C.panel2,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:10,padding:'8px 12px',fontSize:13,fontWeight:700,textDecoration:'none'}}>{'פתח'}</a>
+      <button onClick={()=>del(it.num,it.meta.name)} style={{background:'transparent',color:'#F0A9A0',border:'1px solid #7A3A34',borderRadius:10,padding:'8px 12px',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:ff}}>{'מחק'}</button>
+    </div>))}
+  </div></div>)
+}
+
 export default function App(){
   const[date,setDate]=useState(ts());const[pool,setPool]=useState(DP);const[board,setBoard]=useState(null)
   const[loading,setLoading]=useState(true);const[saveErr,setSaveErr]=useState(false)
@@ -64,6 +127,7 @@ export default function App(){
   const[celebrate,setCelebrate]=useState(null);const pbr=useRef(new Set());const skr=useRef(false)
   const branch=getBranch()
   const[meta,setMeta]=useState(undefined)
+  const[needsSetup,setNeedsSetup]=useState(false)
 
   const lp=useCallback(async()=>{const p=await sget(pk(branch));if(p&&Array.isArray(p)&&p.length)setPool(p)},[branch])
   const lb=useCallback(async(d,s)=>{
@@ -74,7 +138,7 @@ export default function App(){
   },[branch])
 
   useEffect(()=>{if(!branch)return;const ch=sb.channel('bg-'+branch).on('postgres_changes',{event:'*',schema:'public',table:'bingo_kv'},pl=>{if(skr.current)return;const k=pl.new?.key||pl.old?.key;if(k===pk(branch))lp();if(k===kf(branch,date))lb(date,true)}).subscribe();return()=>sb.removeChannel(ch)},[date,lp,lb,branch])
-  useEffect(()=>{if(!branch){setMeta(null);return}sget(mk(branch)).then(m=>setMeta(m||null))},[branch]);useEffect(()=>{if(branch&&meta)lp()},[lp,branch,meta]);useEffect(()=>{if(branch&&meta)lb(date,false)},[date,lb,branch,meta])
+  useEffect(()=>{if(!branch||branch==='admin'){setMeta(null);return}sget(mk(branch)).then(m=>{setMeta(m||null);setNeedsSetup(!!(m&&m.setup))})},[branch]);useEffect(()=>{if(branch&&meta&&!needsSetup)lp()},[lp,branch,meta,needsSetup]);useEffect(()=>{if(branch&&meta&&!needsSetup)lb(date,false)},[date,lb,branch,meta,needsSetup])
   useEffect(()=>{if(!board)return;const nb=new Set();board.rows.forEach(r=>{if(board.targets.length>0&&board.targets.every(t=>board.cells[`${r.id}::${t.id}`]))nb.add(r.id)});for(const rid of nb){if(!pbr.current.has(rid)){setCelebrate(rid);setTimeout(()=>setCelebrate(null),2500);break}};pbr.current=nb},[board])
 
   async function tc(ri,ti){if(date<ts()&&!admin)return;skr.current=true;const lt=(await sget(kf(branch,date)))||board;const ck=`${ri}::${ti}`;const cells={...(lt.cells||{})};if(cells[ck])delete cells[ck];else cells[ck]=true;const nx={...lt,cells};setBoard(nx);const ok=await sset(kf(branch,date),nx);setSaveErr(!ok);setTimeout(()=>{skr.current=false},1000)}
@@ -113,9 +177,11 @@ export default function App(){
     copySummary();try{window.open('https://wa.me/?text='+encodeURIComponent(sumText),'_blank')}catch(e){}}
   async function shot(){if(!board)return;setCapturing(true);await new Promise(r=>setTimeout(r,180));try{const el=capRef.current;if(!el)throw new Error('render');const canvas=await html2canvas(el,{backgroundColor:'#0E1B2E',scale:2,useCORS:true});canvas.toBlob(async blob=>{if(!blob)return;const file=new File([blob],`bingo-${date}.png`,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:`לוח יעדים ${date}`});return}catch(e){if(e.name==='AbortError')return}}const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`bingo-${date}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)},'image/png')}catch(e){alert('שגיאה בצילום המסך: '+e.message)}finally{setCapturing(false)}}
 
+  if(branch==='admin')return<SuperAdmin C={C} df={df} ff={ff}/>
   if(!branch)return<Landing C={C} df={df} ff={ff}/>
   if(meta===undefined)return<div style={{minHeight:'100vh',background:C.bg,color:C.sub,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:ff,fontSize:15}}>{'\u05d8\u05d5\u05e2\u05df\u2026'}</div>
   if(meta===null)return<NotFound C={C} df={df} ff={ff} branch={branch}/>
+  if(needsSetup)return<Setup C={C} df={df} ff={ff} branch={branch} meta={meta} onDone={()=>location.reload()}/>
   return(
     /* ── overflowX:hidden מונע גלילה אופקית של הדף כולו ── */
     <div dir="rtl" style={{minHeight:'100vh',background:C.bg,fontFamily:ff,color:C.white,overflowX:'hidden'}}>
