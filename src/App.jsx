@@ -31,7 +31,7 @@ function Landing({C,df,ff}){
   const[mode,setMode]=useState('home')
   const[num,setNum]=useState('');const[name,setName]=useState('');const[code,setCode]=useState('')
   const[q,setQ]=useState('');const[a,setA]=useState('')
-  const[err,setErr]=useState('');const[busy,setBusy]=useState(false);const[created,setCreated]=useState(null)
+  const[err,setErr]=useState('');const[busy,setBusy]=useState(false);const[created,setCreated]=useState(null);const[help,setHelp]=useState(false)
   const wrap={minHeight:'100vh',background:C.bg,color:C.white,fontFamily:ff,display:'flex',alignItems:'center',justifyContent:'center',padding:20}
   const card={width:'100%',maxWidth:440,background:C.panel,border:`1px solid ${C.line}`,borderRadius:20,padding:24,boxSizing:'border-box'}
   const inp={width:'100%',boxSizing:'border-box',background:C.panel2,color:C.white,border:`1px solid ${C.line}`,borderRadius:12,padding:'13px 14px',fontFamily:ff,fontSize:15,outline:'none',marginTop:10,direction:'rtl'}
@@ -51,7 +51,31 @@ function Landing({C,df,ff}){
     <button style={btn(true)} onClick={()=>go(created.num)}>{'המשך להגדרת הבנקאים'}</button>
   </div></div>)
   return(<div style={wrap}><div style={card}>{title}
-    {mode==='home'&&<><button style={btn(true)} onClick={()=>{setErr('');setMode('create')}}>{'➕ צור סניף חדש'}</button><button style={btn(false)} onClick={()=>{setErr('');setMode('enter')}}>{'🔑 כניסה לסניף קיים'}</button></>}
+    {mode==='home'&&<><button style={btn(true)} onClick={()=>{setErr('');setMode('create')}}>{'➕ צור סניף חדש'}</button><button style={btn(false)} onClick={()=>{setErr('');setMode('enter')}}>{'🔑 כניסה לסניף קיים'}</button>
+      <div onClick={()=>setHelp(true)} style={{color:C.goldSoft,fontSize:13,textAlign:'center',marginTop:16,cursor:'pointer',textDecoration:'underline'}}>{'ℹ️ איך זה עובד?'}</div>
+      {help&&<div onClick={()=>setHelp(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',display:'flex',alignItems:'flex-start',justifyContent:'center',padding:20,overflowY:'auto',zIndex:50}}>
+        <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:440,background:C.panel,border:`1px solid ${C.line}`,borderRadius:20,padding:22,margin:'24px 0',boxSizing:'border-box',direction:'rtl',textAlign:'right'}}>
+          <div style={{fontFamily:df,fontWeight:800,fontSize:20,marginBottom:2}}>{'ℹ️ איך זה עובד?'}</div>
+          <div style={{color:C.gold,fontWeight:800,fontSize:15,marginTop:14}}>{'🆕 כניסה ראשונה — יצירת סניף'}</div>
+          <div style={{color:C.white,fontSize:14,lineHeight:1.7,marginTop:6,display:'flex',flexDirection:'column',gap:3}}>
+            <div>{'1. לחצו "צור סניף חדש".'}</div>
+            <div>{'2. הזינו מספר סניף (יופיע בקישור), שם הסניף, וקוד אדמין אישי.'}</div>
+            <div>{'3. אפשר להוסיף שאלת שחזור — לא חובה.'}</div>
+            <div>{'4. תקבלו קוד שחזור חד-פעמי — שמרו אותו! (לאיפוס הקוד אם תשכחו).'}</div>
+            <div>{'5. הגדירו את שמות הבנקאים בסניף.'}</div>
+            <div>{'6. תקבלו קישור ייעודי — הפיצו אותו לצוות.'}</div>
+          </div>
+          <div style={{color:C.gold,fontWeight:800,fontSize:15,marginTop:16}}>{'🔁 כניסה חוזרת — כבר יש לי סניף'}</div>
+          <div style={{color:C.white,fontSize:14,lineHeight:1.7,marginTop:6,display:'flex',flexDirection:'column',gap:3}}>
+            <div>{'• הכי פשוט: פִּתחו את הקישור של הסניף שקיבלתם.'}</div>
+            <div>{'• אין קישור? "כניסה לסניף קיים" → הזינו את מספר הסניף.'}</div>
+            <div>{'• לעריכת יעדים/שמות: כפתור "אדמין" בתוך הלוח + קוד האדמין.'}</div>
+            <div>{'• שכחתם קוד? "שכחתי את הקוד" במסך הכניסה — שחזור דרך שאלה או קוד שחזור.'}</div>
+          </div>
+          <button onClick={()=>setHelp(false)} style={{width:'100%',marginTop:18,background:C.gold,color:C.panel2,border:'none',borderRadius:12,padding:12,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'הבנתי'}</button>
+        </div>
+      </div>}
+    </>}
     {mode==='create'&&<>
       <input style={inp} value={num} onChange={e=>setNum(e.target.value)} inputMode="numeric" placeholder="מספר סניף (למשל 4021)"/>
       <input style={inp} value={name} onChange={e=>setName(e.target.value)} placeholder="שם הסניף (יופיע בכותרת)"/>
