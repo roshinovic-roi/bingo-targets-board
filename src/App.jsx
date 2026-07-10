@@ -227,6 +227,7 @@ export default function App(){
     // ב-iOS תפריט השיתוף מצרף את כתובת הדף, ווואטסאפ מציג לינק במקום הטקסט.
     // לכן מעתיקים את הסיכום המדויק ופותחים את וואטסאפ עם הטקסט מוכן מראש.
     copySummary();try{window.open('https://wa.me/?text='+encodeURIComponent(sumText),'_blank')}catch(e){}}
+  function shareLink(){const url=location.origin+'/s/'+branch;const msg=['לוח היעדים של '+(meta?meta.name:'')+' 🎯','מסמנים יעדים בזמן אמת ומדווחים ביצועים.','היכנסו כאן:',url].join(String.fromCharCode(10));window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank')}
   async function shot(){if(!board)return;setCapturing(true);await new Promise(r=>setTimeout(r,180));try{const el=capRef.current;if(!el)throw new Error('render');const canvas=await html2canvas(el,{backgroundColor:'#0E1B2E',scale:2,useCORS:true});canvas.toBlob(async blob=>{if(!blob)return;const file=new File([blob],`bingo-${date}.png`,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:`לוח יעדים ${date}`});return}catch(e){if(e.name==='AbortError')return}}const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`bingo-${date}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)},'image/png')}catch(e){alert('שגיאה בצילום המסך: '+e.message)}finally{setCapturing(false)}}
 
   if(branch==='admin')return<SuperAdmin C={C} df={df} ff={ff}/>
@@ -246,6 +247,9 @@ export default function App(){
           <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
           <button onClick={()=>setHelpOpen(true)} title="הוראות שימוש" style={{display:'flex',alignItems:'center',gap:6,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'10px 13px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>
             <span>{'\u2139\ufe0f'}</span><span>{'\u05d4\u05d5\u05e8\u05d0\u05d5\u05ea'}</span>
+          </button>
+          <button onClick={shareLink} title="שלח קישור לבנקאים בוואטסאפ" style={{display:'flex',alignItems:'center',gap:6,background:C.panel,color:'#7FCF9A',border:'1px solid #2E5E43',borderRadius:12,padding:'10px 13px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>
+            <span>{'📲'}</span><span>{'קישור לצוות'}</span>
           </button>
           <button onClick={()=>admin?setShowPanel(s=>!s):setCodeOpen(true)} style={{display:'flex',alignItems:'center',gap:8,background:admin?C.gold:C.panel,color:admin?C.panel2:C.goldSoft,border:`1px solid ${admin?C.gold:C.line}`,borderRadius:12,padding:'10px 15px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>
             <span>{admin?'\u2699\ufe0f':'\ud83d\udd12'}</span><span>{admin?'\u05e0\u05d9\u05d4\u05d5\u05dc':'\u05d0\u05d3\u05de\u05d9\u05df'}</span>
