@@ -168,11 +168,16 @@ function Bo({board,admin,locked,pool,celebrate,onToggle,onRenameTarget,onRemoveT
   const NW=admin?108:110, CW=58
   const cols=`${NW}px repeat(${board.targets.length},${CW}px)`
   const ff=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
+  const scRef=useRef(null)
+  const[edge,setEdge]=useState({l:false,r:false})
+  const upd=useCallback(()=>{const el=scRef.current;if(!el)return;const max=el.scrollWidth-el.clientWidth;const s=Math.abs(el.scrollLeft);setEdge({l:s<max-2,r:s>2})},[])
+  useEffect(()=>{upd();const el=scRef.current;const raf=requestAnimationFrame(upd);let ro;if(el&&'ResizeObserver'in window){ro=new ResizeObserver(upd);ro.observe(el)}window.addEventListener('resize',upd);return()=>{cancelAnimationFrame(raf);if(ro)ro.disconnect();window.removeEventListener('resize',upd)}},[upd,board])
 
   return(
     <div>
       {/* הלוח עצמו — גולל רק בתוכו */}
-      <div style={{background:C.board,borderRadius:20,padding:10,boxShadow:'0 12px 36px rgba(0,0,0,.4)',overflowX:'auto',WebkitOverflowScrolling:'touch'}}>
+      <div style={{position:'relative'}}>
+      <div ref={scRef} onScroll={upd} style={{background:C.board,borderRadius:20,padding:10,boxShadow:'0 12px 36px rgba(0,0,0,.4)',overflowX:'auto',WebkitOverflowScrolling:'touch'}}>
         <div style={{display:'grid',gridTemplateColumns:cols,gap:5,minWidth:'fit-content'}}>
 
           {/* שורת כותרות יעדים */}
@@ -215,6 +220,9 @@ function Bo({board,admin,locked,pool,celebrate,onToggle,onRenameTarget,onRemoveT
             </RF>)
           })}
         </div>
+      </div>
+      {edge.l&&<div style={{position:'absolute',left:0,top:10,bottom:10,width:38,pointerEvents:'none',display:'flex',alignItems:'center',justifyContent:'flex-start',paddingLeft:3,borderRadius:'20px 0 0 20px',background:`linear-gradient(to left, transparent, ${C.board} 78%)`}}><span style={{fontSize:26,color:C.gold,fontWeight:900,lineHeight:1,filter:'drop-shadow(0 1px 2px rgba(0,0,0,.3))'}}>{'\u2039'}</span></div>}
+      {edge.r&&<div style={{position:'absolute',top:10,bottom:10,right:NW+11,width:38,pointerEvents:'none',display:'flex',alignItems:'center',justifyContent:'flex-end',paddingRight:3,background:`linear-gradient(to right, transparent, ${C.board} 78%)`}}><span style={{fontSize:26,color:C.gold,fontWeight:900,lineHeight:1,filter:'drop-shadow(0 1px 2px rgba(0,0,0,.3))'}}>{'\u203a'}</span></div>}
       </div>
 
       {/* כפתורי הוספה — מחוץ לאזור הגלילה, תמיד גלויים */}
