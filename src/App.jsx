@@ -10,7 +10,7 @@ const DP=['\u05d1\u05e0\u05e7\u05d0\u05d9 1','\u05d1\u05e0\u05e7\u05d0\u05d9 2',
 const MASTER='ROI-2103'
 const C={bg:'#0E1B2E',panel:'#13253C',panel2:'#0B1626',board:'#F6F2E7',ink:'#16283C',sub:'#66788A',gold:'#C7A24A',goldSoft:'#E7D7A6',line:'#263B54',boardLine:'#E0D8C4',pendBg:'#F4E0DC',pendBd:'#E3B6AE',pend:'#B8433A',doneBg:'#DCEEDF',doneBd:'#A4D2AF',done:'#2E9E5B',white:'#FBF9F3'}
 const uid=()=>Math.random().toString(36).slice(2,9)
-const ts=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+const ts=()=>{const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const g=t=>p.find(x=>x.type===t).value;return`${g('year')}-${g('month')}-${g('day')}`}
 const kf=(b,d)=>`b:${b}:board:${d}`
 const pk=b=>`b:${b}:pool`
 const mk=b=>`b:${b}:meta`
