@@ -221,8 +221,8 @@ function Bo({board,admin,locked,pool,celebrate,onToggle,onRenameTarget,onRemoveT
           })}
         </div>
       </div>
-      {edge.l&&<div style={{position:'absolute',left:8,top:8,width:34,height:34,borderRadius:99,background:'rgba(15,27,46,.94)',boxShadow:'0 2px 10px rgba(0,0,0,.4)',display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',zIndex:3}}><span style={{fontSize:22,color:C.gold,fontWeight:900,lineHeight:1,marginRight:3}}>{'\u2039'}</span></div>}
-      {edge.r&&<div style={{position:'absolute',right:NW+12,top:8,width:34,height:34,borderRadius:99,background:'rgba(15,27,46,.94)',boxShadow:'0 2px 10px rgba(0,0,0,.4)',display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',zIndex:3}}><span style={{fontSize:22,color:C.gold,fontWeight:900,lineHeight:1,marginLeft:3}}>{'\u203a'}</span></div>}
+      {edge.l&&<div style={{position:'absolute',left:18,bottom:'100%',marginBottom:3,pointerEvents:'none',zIndex:3,fontSize:30,lineHeight:1,color:C.gold,fontWeight:500,textShadow:'0 1px 3px rgba(0,0,0,.5)'}}>{'\u2039'}</div>}
+      {edge.r&&<div style={{position:'absolute',right:NW+14,bottom:'100%',marginBottom:3,pointerEvents:'none',zIndex:3,fontSize:30,lineHeight:1,color:C.gold,fontWeight:500,textShadow:'0 1px 3px rgba(0,0,0,.5)'}}>{'\u203a'}</div>}
       </div>
 
       {/* כפתורי הוספה — מחוץ לאזור הגלילה, תמיד גלויים */}
