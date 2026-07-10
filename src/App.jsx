@@ -134,11 +134,9 @@ export default function App(){
           <button onClick={openSummary} style={{display:'flex',alignItems:'center',gap:8,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'11px 18px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>{'📋 סיכום יום'}</button>
         </div>}
 
-        {capturing&&board&&<div ref={capRef} aria-hidden style={{position:'absolute',left:-99999,top:0,width:Math.max(600,170+board.targets.length*64),background:'#0E1B2E',padding:22,boxSizing:'border-box'}}>
-          <div style={{color:C.gold,fontFamily:df,fontWeight:800,fontSize:23,marginBottom:12,textAlign:'right',direction:'rtl'}}>{`🎯 לוח יעדים · ${hd(date)}`}</div>
-          <Bo board={board} admin={false} locked={false} pool={pool} celebrate={false} onToggle={NOOP} onRenameTarget={NOOP} onRemoveTarget={NOOP} onRemoveRow={NOOP} onSetRowName={NOOP} onAddTarget={NOOP} onAddRow={NOOP}/>
-          <div style={{color:C.gold,fontFamily:df,fontWeight:800,fontSize:23,margin:'24px 0 12px',textAlign:'right',direction:'rtl'}}>{'📊 דיווח ביצועים'}</div>
-          <Rep C={C} board={board} locked={true} capture onChange={NOOP} onSave={NOOP}/>
+        {capturing&&board&&<div ref={capRef} aria-hidden style={{position:'absolute',left:-99999,top:0,width:'fit-content',background:'#0E1B2E',padding:22,boxSizing:'border-box'}}>
+          <div style={{color:C.gold,fontFamily:df,fontWeight:800,fontSize:23,marginBottom:14,textAlign:'right',direction:'rtl'}}>{`🎯 לוח יעדים · ${hd(date)}`}</div>
+          <Cap C={C} board={board}/>
         </div>}
       </div>
 
@@ -273,6 +271,40 @@ function Rep({C,board,locked,capture,onChange,onSave}){
         </RF>)})}
       </div>
       {!capture&&<div style={{color:C.ink,opacity:.6,fontSize:12,marginTop:12,textAlign:'center',fontFamily:f}}>{locked?'🔒 יום עבר · לצפייה בלבד.':'הזינו ביצועים · אשראי באלפי ₪ (א׳). נשמר אוטומטית.'}</div>}
+    </div>
+  )
+}
+
+/* ══ COMBINED CAPTURE TABLE (one continuous row per banker: name · targets · credit · recruit) ══ */
+function Cap({C,board}){
+  const f=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
+  const NW=110,CW=58,RW=80
+  const cols=`${NW}px repeat(${board.targets.length},${CW}px) ${RW}px ${RW}px`
+  const rep=board.reports||{}
+  const th=full=>({color:C.ink,fontSize:12,fontWeight:800,textAlign:'center',display:'flex',alignItems:'flex-end',justifyContent:'center',minHeight:46,lineHeight:1.2,paddingBottom:4,borderBottom:`2.5px solid ${full?C.done:C.boardLine}`})
+  const repTh={color:'#8A6B22',fontSize:12,fontWeight:800,textAlign:'center',display:'flex',alignItems:'flex-end',justifyContent:'center',minHeight:46,lineHeight:1.2,paddingBottom:4,borderBottom:`2.5px solid ${C.gold}`}
+  const repCell={height:54,borderRadius:12,background:'#FBF4E1',border:'2px solid #E7D9A8',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:f,fontWeight:800,fontSize:17,color:C.ink}
+  return(
+    <div style={{background:C.board,borderRadius:20,padding:12,boxShadow:'0 12px 36px rgba(0,0,0,.4)',width:'fit-content'}}>
+      <div style={{display:'grid',gridTemplateColumns:cols,gap:5}}>
+        <div/>
+        {board.targets.map(t=>{const cf=board.rows.length>0&&board.rows.every(r=>board.cells[`${r.id}::${t.id}`]);return<div key={t.id} style={th(cf)}>{t.label}</div>})}
+        <div style={repTh}>{'אשראי (א׳)'}</div>
+        <div style={repTh}>{'גיוס'}</div>
+        {board.rows.map(r=>{
+          const rf=board.targets.length>0&&board.targets.every(t=>board.cells[`${r.id}::${t.id}`])
+          const rr=rep[r.id]||{},c=parseInt(rr.credit,10)||0,g=parseInt(rr.recruit,10)||0
+          return(<RF key={r.id}>
+            <div style={{display:'flex',alignItems:'center',gap:4,background:rf?'#FBF3D9':C.white,border:`1.5px solid ${rf?C.gold:C.boardLine}`,borderRadius:12,padding:'0 8px',height:54}}>
+              <span style={{flex:1,color:C.ink,fontSize:14,fontWeight:800,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.name}</span>
+              {rf&&<span style={{fontSize:13}}>{'🎉'}</span>}
+            </div>
+            {board.targets.map(t=>{const done=!!board.cells[`${r.id}::${t.id}`];return<div key={t.id} style={{height:54,borderRadius:12,background:done?C.doneBg:C.pendBg,border:`2px solid ${done?C.doneBd:C.pendBd}`,fontSize:22,display:'flex',alignItems:'center',justifyContent:'center'}}>{done?'✅':'❌'}</div>})}
+            <div style={repCell}>{c>0?c:'—'}</div>
+            <div style={repCell}>{g>0?g:'—'}</div>
+          </RF>)
+        })}
+      </div>
     </div>
   )
 }
