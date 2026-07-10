@@ -42,6 +42,8 @@ export default function App(){
 
   async function tc(ri,ti){if(date<ts()&&!admin)return;skr.current=true;const lt=(await sget(kf(date)))||board;const ck=`${ri}::${ti}`;const cells={...(lt.cells||{})};if(cells[ck])delete cells[ck];else cells[ck]=true;const nx={...lt,cells};setBoard(nx);const ok=await sset(kf(date),nx);setSaveErr(!ok);setTimeout(()=>{skr.current=false},1000)}
   async function cm(fn){skr.current=true;const lt=(await sget(kf(date)))||board;const nx=fn(JSON.parse(JSON.stringify(lt)));setBoard(nx);const ok=await sset(kf(date),nx);setSaveErr(!ok);setTimeout(()=>{skr.current=false},1000)}
+  function repChange(rid,field,val){if(date<ts()&&!admin)return;const v=(val||'').replace(/[^0-9]/g,'').slice(0,9);setBoard(b=>{const reports={...(b.reports||{})};reports[rid]={...(reports[rid]||{}),[field]:v};return {...b,reports}})}
+  function repSave(){if(date<ts()&&!admin)return;setBoard(b=>{if(b){skr.current=true;sset(kf(date),b).then(ok=>{setSaveErr(!ok);setTimeout(()=>{skr.current=false},800)})}return b})}
   const at=()=>cm(b=>{b.targets.push({id:uid(),label:`\u05d9\u05e2\u05d3 ${b.targets.length+1}`});return b})
   const rt=tid=>cm(b=>{b.targets=b.targets.filter(t=>t.id!==tid);Object.keys(b.cells).forEach(k=>{if(k.endsWith(`::${tid}`))delete b.cells[k]});return b})
   const rnt=(tid,l)=>cm(b=>{const t=b.targets.find(x=>x.id===tid);if(t)t.label=l;return b})
@@ -61,8 +63,8 @@ export default function App(){
   const past=date<ts();const locked=past&&!admin
 
   const boardRef=useRef(null)
-  const[sumOpen,setSumOpen]=useState(false);const[sumText,setSumText]=useState('');const[copied,setCopied]=useState(false)
-  function buildSummary(){if(!board)return'';const rows=board.rows,tg=board.targets;const tot=rows.length*tg.length;const dn=Object.keys(board.cells).filter(k=>board.cells[k]).length;const pct=tot?Math.round(dn/tot*100):0;const bingo=rows.filter(r=>tg.length>0&&tg.every(t=>board.cells[`${r.id}::${t.id}`]));let s=`🎯 סיכום יום · ${hd(date)}\n\n✅ הושלמו: ${dn}/${tot} (${pct}%)\n`;if(bingo.length)s+=`🎉 בינגו מלא: ${bingo.map(r=>r.name).join(', ')}\n`;s+=`\n👤 לפי בנקאי:\n`;rows.forEach(r=>{const c=tg.filter(t=>board.cells[`${r.id}::${t.id}`]).length;s+=`• ${r.name}: ${c}/${tg.length}${tg.length>0&&c===tg.length?' 🏆':''}\n`});s+=`\n🎯 לפי יעד:\n`;tg.forEach(t=>{const c=rows.filter(r=>board.cells[`${r.id}::${t.id}`]).length;s+=`• ${t.label}: ${c}/${rows.length}\n`});return s}
+  const[sumOpen,setSumOpen]=useState(false);const[sumText,setSumText]=useState('');const[copied,setCopied]=useState(false);const[tab,setTab]=useState('board')
+  function buildSummary(){if(!board)return'';const rows=board.rows,tg=board.targets;const tot=rows.length*tg.length;const dn=Object.keys(board.cells).filter(k=>board.cells[k]).length;const pct=tot?Math.round(dn/tot*100):0;const bingo=rows.filter(r=>tg.length>0&&tg.every(t=>board.cells[`${r.id}::${t.id}`]));let s=`🎯 סיכום יום · ${hd(date)}\n\n✅ הושלמו: ${dn}/${tot} (${pct}%)\n`;if(bingo.length)s+=`🎉 בינגו מלא: ${bingo.map(r=>r.name).join(', ')}\n`;s+=`\n👤 לפי בנקאי:\n`;rows.forEach(r=>{const c=tg.filter(t=>board.cells[`${r.id}::${t.id}`]).length;s+=`• ${r.name}: ${c}/${tg.length}${tg.length>0&&c===tg.length?' 🏆':''}\n`});s+=`\n🎯 לפי יעד:\n`;tg.forEach(t=>{const c=rows.filter(r=>board.cells[`${r.id}::${t.id}`]).length;s+=`• ${t.label}: ${c}/${rows.length}\n`});const rep=board.reports||{};const rl=rows.map(r=>{const rr=rep[r.id]||{};const c=parseInt(rr.credit,10)||0;const g=parseInt(rr.recruit,10)||0;const p=[];if(c>0)p.push(`${c} א ₪ אשראי`);if(g>0)p.push(g===1?'גיוס אחד':`${g} גיוסים`);return p.length?`• ${r.name}: ${p.join(' ו־')}`:null}).filter(Boolean);if(rl.length)s+=`\n📊 דיווח ביצועים:\n`+rl.join('\n')+'\n';return s}
   function openSummary(){setSumText(buildSummary());setCopied(false);setSumOpen(true)}
   function copySummary(){try{navigator.clipboard.writeText(sumText);setCopied(true);setTimeout(()=>setCopied(false),1600)}catch(e){setCopied(false)}}
   async function shareSummary(){const iOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);try{if(navigator.share&&!iOS){await navigator.share({text:sumText});return}}catch(e){if(e.name==='AbortError')return}
@@ -93,13 +95,18 @@ export default function App(){
           </div>
         </header>
 
+        <div style={{display:'flex',gap:8,marginBottom:14}}>
+          <button onClick={()=>setTab('board')} style={{flex:1,background:tab==='board'?C.gold:C.panel,color:tab==='board'?C.panel2:C.goldSoft,border:`1px solid ${tab==='board'?C.gold:C.line}`,borderRadius:12,padding:'11px',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:ff}}>{'🎯 לוח יעדים'}</button>
+          <button onClick={()=>setTab('report')} style={{flex:1,background:tab==='report'?C.gold:C.panel,color:tab==='report'?C.panel2:C.goldSoft,border:`1px solid ${tab==='report'?C.gold:C.line}`,borderRadius:12,padding:'11px',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:ff}}>{'📊 דיווח ביצועים'}</button>
+        </div>
+
         <div style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:8,marginBottom:16}}>
           <div style={{display:'flex',alignItems:'center',gap:8,background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:'8px 13px'}}>
             <span>{'\ud83d\udcc5'}</span>
             <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{background:'transparent',color:C.white,border:'none',outline:'none',fontFamily:ff,fontSize:14,fontWeight:600,cursor:'pointer'}}/>
           </div>
           <div style={{background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:'8px 13px',fontSize:13,color:C.sub}}>{hd(date)}{date===ts()&&<span style={{color:C.gold,fontWeight:700}}>{' \u00b7 \u05d4\u05d9\u05d5\u05dd'}</span>}</div>
-          {st&&(<div style={{display:'flex',alignItems:'center',gap:8,background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:'8px 13px'}}>
+          {st&&tab==='board'&&(<div style={{display:'flex',alignItems:'center',gap:8,background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:'8px 13px'}}>
             <div style={{width:80,height:8,background:C.panel2,borderRadius:99,overflow:'hidden'}}><div style={{width:`${st.pct}%`,height:'100%',background:C.done,transition:'width .4s'}}/></div>
             <span style={{fontSize:13,fontWeight:700}}>{st.dn}/{st.tot}</span>
             {st.fl>0&&<span style={{fontSize:13,color:C.gold,fontWeight:700}}>{`\u00b7 ${st.fl} \u05d1\u05d9\u05e0\u05d2\u05d5 \ud83c\udf89`}</span>}
@@ -111,13 +118,13 @@ export default function App(){
 
         {loading?<div style={{textAlign:'center',padding:60,color:C.sub}}>{'טוען…'}</div>:!board?
           <div style={{background:C.board,borderRadius:18,color:C.ink,padding:48,textAlign:'center'}}><div style={{fontSize:44,marginBottom:10}}>{'🗓️'}</div><div style={{fontWeight:700,fontSize:17}}>{'אין לוח לתאריך זה'}</div><div style={{color:C.sub,fontSize:14,marginTop:6}}>{'תאריך עבר שלא הוגדר בו לוח.'}</div></div>:
-          <div ref={boardRef}><Bo board={board} admin={admin} locked={locked} pool={pool} celebrate={celebrate} onToggle={tc} onRenameTarget={rnt} onRemoveTarget={rt} onRemoveRow={rr} onSetRowName={srn} onAddTarget={at} onAddRow={ar}/></div>
+          <div ref={boardRef}>{tab==='board'?<Bo board={board} admin={admin} locked={locked} pool={pool} celebrate={celebrate} onToggle={tc} onRenameTarget={rnt} onRemoveTarget={rt} onRemoveRow={rr} onSetRowName={srn} onAddTarget={at} onAddRow={ar}/>:<Rep C={C} board={board} locked={locked} onChange={repChange} onSave={repSave}/>}</div>
         }
 
-        <div style={{display:'flex',justifyContent:'center',gap:20,marginTop:18,color:C.sub,fontSize:12}}>
+        {tab==='board'&&<div style={{display:'flex',justifyContent:'center',gap:20,marginTop:18,color:C.sub,fontSize:12}}>
           {!locked&&<><span>{'❌ לחץ לסימון'}</span><span>{'✅ לחץ לביטול'}</span></>}
           {admin&&<span style={{color:C.goldSoft}}>{'✏️ לחץ על שם יעד לעריכה'}</span>}
-        </div>
+        </div>}
 
         {board&&!loading&&<div style={{display:'flex',gap:10,justifyContent:'center',marginTop:16,flexWrap:'wrap'}}>
           <button onClick={shot} style={{display:'flex',alignItems:'center',gap:8,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'11px 18px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>{'📸 צילום מסך'}</button>
@@ -236,6 +243,29 @@ function Bo({board,admin,locked,pool,celebrate,onToggle,onRenameTarget,onRemoveT
   )
 }
 const RF=({children})=><>{children}</>
+
+/* ══ PERFORMANCE REPORT ══ */
+function Rep({C,board,locked,onChange,onSave}){
+  const f=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
+  const rows=board.rows,rep=board.reports||{}
+  const inp={width:'100%',boxSizing:'border-box',background:locked?'#EFEDE4':'#fff',border:`1px solid ${C.line}`,borderRadius:10,textAlign:'center',fontFamily:f,fontSize:17,fontWeight:800,color:C.ink,padding:'13px 4px',outline:'none'}
+  const th={fontFamily:f,fontWeight:800,fontSize:13,color:C.ink,textAlign:'center',padding:'0 0 2px'}
+  return(
+    <div style={{background:C.board,borderRadius:20,padding:12,boxShadow:'0 12px 36px rgba(0,0,0,.4)'}}>
+      <div style={{display:'grid',gridTemplateColumns:'minmax(80px,1fr) 92px 92px',gap:7,alignItems:'center'}}>
+        <div style={{...th,textAlign:'right',paddingRight:6}}>{'בנקאי'}</div>
+        <div style={th}>{'אשראי (א׳)'}</div>
+        <div style={th}>{'גיוס'}</div>
+        {rows.map(r=>{const v=rep[r.id]||{};return(<RF key={r.id}>
+          <div style={{background:'#FBFAF3',border:`1px solid ${C.line}`,borderRadius:10,padding:'13px 10px',textAlign:'right',fontFamily:f,fontWeight:800,fontSize:15,color:C.ink,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{r.name}</div>
+          <input type="tel" inputMode="numeric" disabled={locked} value={v.credit||''} onChange={e=>onChange(r.id,'credit',e.target.value)} onBlur={onSave} placeholder="0" style={inp}/>
+          <input type="tel" inputMode="numeric" disabled={locked} value={v.recruit||''} onChange={e=>onChange(r.id,'recruit',e.target.value)} onBlur={onSave} placeholder="0" style={inp}/>
+        </RF>)})}
+      </div>
+      <div style={{color:C.ink,opacity:.6,fontSize:12,marginTop:12,textAlign:'center',fontFamily:f}}>{locked?'🔒 יום עבר · לצפייה בלבד.':'הזינו ביצועים · אשראי באלפי ₪ (א׳). נשמר אוטומטית.'}</div>
+    </div>
+  )
+}
 
 /* ══ ADMIN PANEL ══ */
 function AP({C,pool,date,copyFrom,setCopyFrom,onClose,onLock,onClearDay,onEditPoolName,onCommitPool,onAddPool,onRemovePool,onCopyStructure,display}){
