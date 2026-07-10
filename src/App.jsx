@@ -235,6 +235,8 @@ export default function App(){
   if(meta===undefined)return<div style={{minHeight:'100vh',background:C.bg,color:C.sub,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:ff,fontSize:15}}>{'\u05d8\u05d5\u05e2\u05df\u2026'}</div>
   if(meta===null)return<NotFound C={C} df={df} ff={ff} branch={branch}/>
   if(needsSetup)return<Setup C={C} df={df} ff={ff} branch={branch} meta={meta} onDone={()=>location.reload()}/>
+  const shotMode=new URLSearchParams(location.search).get('shot')==='1'
+  if(shotMode)return<div style={{background:'#0E1B2E',minHeight:'100vh',fontFamily:ff}}><div id="shotwrap" style={{background:'#0E1B2E',padding:22,display:'inline-block',direction:'rtl'}}>{board?<><div style={{color:C.gold,fontFamily:df,fontWeight:800,fontSize:23,marginBottom:14,textAlign:'right'}}>{`\ud83c\udfaf \u05dc\u05d5\u05d7 \u05d9\u05e2\u05d3\u05d9\u05dd \u00b7 ${hd(date)}`}</div><Cap C={C} board={board}/></>:<div style={{color:C.sub,padding:20}}>{'\u05d8\u05d5\u05e2\u05df\u2026'}</div>}</div></div>
   return(
     /* ── overflowX:hidden מונע גלילה אופקית של הדף כולו ── */
     <div dir="rtl" style={{minHeight:'100vh',background:C.bg,fontFamily:ff,color:C.white,overflowX:'hidden'}}>
