@@ -15,6 +15,7 @@ const kf=(b,d)=>`b:${b}:board:${d}`
 const pk=b=>`b:${b}:pool`
 const mk=b=>`b:${b}:meta`
 const bp=b=>`b:${b}:board:`
+const ri=(C,ff)=>({width:'100%',boxSizing:'border-box',background:C.panel2,color:C.white,border:`1px solid ${C.line}`,borderRadius:12,padding:'12px 14px',fontFamily:ff,fontSize:15,outline:'none',marginTop:10,direction:'rtl'})
 const getBranch=()=>{const m=(typeof location!=='undefined'?location.pathname:'').match(/\/s\/([^/?#]+)/);return m?decodeURIComponent(m[1]):null}
 const hd=s=>{try{const[y,m,d]=s.split('-');const dt=new Date(+y,+m-1,+d);const dn=['\u05e8\u05d0\u05e9\u05d5\u05df','\u05e9\u05e0\u05d9','\u05e9\u05dc\u05d9\u05e9\u05d9','\u05e8\u05d1\u05d9\u05e2\u05d9','\u05d7\u05de\u05d9\u05e9\u05d9','\u05e9\u05d9\u05e9\u05d9','\u05e9\u05d1\u05ea'];return`\u05d9\u05d5\u05dd ${dn[dt.getDay()]}, ${+d}.${+m}.${y}`}catch{return s}}
 
@@ -29,20 +30,45 @@ function EL({value,onSave,disabled,style}){
 function Landing({C,df,ff}){
   const[mode,setMode]=useState('home')
   const[num,setNum]=useState('');const[name,setName]=useState('');const[code,setCode]=useState('')
-  const[err,setErr]=useState('');const[busy,setBusy]=useState(false)
+  const[q,setQ]=useState('');const[a,setA]=useState('')
+  const[err,setErr]=useState('');const[busy,setBusy]=useState(false);const[created,setCreated]=useState(null)
   const wrap={minHeight:'100vh',background:C.bg,color:C.white,fontFamily:ff,display:'flex',alignItems:'center',justifyContent:'center',padding:20}
-  const card={width:'100%',maxWidth:420,background:C.panel,border:`1px solid ${C.line}`,borderRadius:20,padding:24,boxSizing:'border-box'}
+  const card={width:'100%',maxWidth:440,background:C.panel,border:`1px solid ${C.line}`,borderRadius:20,padding:24,boxSizing:'border-box'}
   const inp={width:'100%',boxSizing:'border-box',background:C.panel2,color:C.white,border:`1px solid ${C.line}`,borderRadius:12,padding:'13px 14px',fontFamily:ff,fontSize:15,outline:'none',marginTop:10,direction:'rtl'}
-  const btn=p=>({width:'100%',background:p?C.gold:'transparent',color:p?C.panel2:C.goldSoft,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:13,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff,marginTop:12})
+  const btn=v=>({width:'100%',background:v?C.gold:'transparent',color:v?C.panel2:C.goldSoft,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:13,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff,marginTop:12})
   const go=n=>{location.href='/s/'+encodeURIComponent(n)}
-  async function create(){setErr('');const nn=num.replace(/\D/g,'');if(!nn){setErr('\u05d4\u05d6\u05df \u05de\u05e1\u05e4\u05e8 \u05e1\u05e0\u05d9\u05e3 (\u05e1\u05e4\u05e8\u05d5\u05ea)');return}if(!name.trim()){setErr('\u05d4\u05d6\u05df \u05e9\u05dd \u05e1\u05e0\u05d9\u05e3');return}if(code.length<3){setErr('\u05e7\u05d5\u05d3 \u05d0\u05d3\u05de\u05d9\u05df \u2014 \u05dc\u05e4\u05d7\u05d5\u05ea 3 \u05ea\u05d5\u05d5\u05d9\u05dd');return}setBusy(true);const ex=await sget(mk(nn));if(ex){setBusy(false);setErr(`\u05e1\u05e0\u05d9\u05e3 ${nn} \u05db\u05d1\u05e8 \u05ea\u05e4\u05d5\u05e1 \u2014 \u05d1\u05d7\u05e8 \u05de\u05e1\u05e4\u05e8 \u05d0\u05d7\u05e8`);return}const ok=await sset(mk(nn),{name:name.trim(),code,createdAt:new Date().toISOString(),setup:true});setBusy(false);if(!ok){setErr('\u05e9\u05d2\u05d9\u05d0\u05ea \u05e9\u05de\u05d9\u05e8\u05d4, \u05e0\u05e1\u05d4 \u05e9\u05d5\u05d1');return}go(nn)}
-  function enter(){const nn=num.replace(/\D/g,'');if(!nn){setErr('\u05d4\u05d6\u05df \u05de\u05e1\u05e4\u05e8 \u05e1\u05e0\u05d9\u05e3');return}go(nn)}
-  return(<div style={wrap}><div style={card}>
-    <div style={{fontFamily:df,fontWeight:800,fontSize:26,textAlign:'center'}}>{'\ud83c\udfaf \u05dc\u05d5\u05d7 \u05d4\u05d9\u05e2\u05d3\u05d9\u05dd'}</div>
-    <div style={{color:C.sub,fontSize:13,textAlign:'center',marginTop:6,marginBottom:16}}>{'\u05dc\u05d5\u05d7 \u05d9\u05e2\u05d3\u05d9\u05dd \u05d9\u05d5\u05de\u05d9 \u05dc\u05e1\u05e0\u05d9\u05e3 \u00b7 \u05d1\u05d9\u05e0\u05d2\u05d5 \u05d1\u05d9\u05e6\u05d5\u05e2\u05d9\u05dd'}</div>
-    {mode==='home'&&<><button style={btn(true)} onClick={()=>{setErr('');setMode('create')}}>{'\u2795 \u05e6\u05d5\u05e8 \u05e1\u05e0\u05d9\u05e3 \u05d7\u05d3\u05e9'}</button><button style={btn(false)} onClick={()=>{setErr('');setMode('enter')}}>{'\ud83d\udd11 \u05db\u05e0\u05d9\u05e1\u05d4 \u05dc\u05e1\u05e0\u05d9\u05e3 \u05e7\u05d9\u05d9\u05dd'}</button></>}
-    {mode==='create'&&<><input style={inp} value={num} onChange={e=>setNum(e.target.value)} inputMode="numeric" placeholder="מספר סניף (למשל 4021)"/><input style={inp} value={name} onChange={e=>setName(e.target.value)} placeholder="שם הסניף (יופיע בכותרת)"/><input style={inp} value={code} onChange={e=>setCode(e.target.value)} placeholder="קוד אדמין (לעריכה)"/>{err&&<div style={{color:'#F0A9A0',fontSize:13,marginTop:10,textAlign:'center'}}>{err}</div>}<button style={btn(true)} disabled={busy} onClick={create}>{busy?'\u05d9\u05d5\u05e6\u05e8\u2026':'\u05e6\u05d5\u05e8 \u05d5\u05d4\u05de\u05e9\u05da'}</button><button style={{...btn(false),marginTop:8}} onClick={()=>{setErr('');setMode('home')}}>{'\u05d7\u05d6\u05e8\u05d4'}</button></>}
-    {mode==='enter'&&<><input style={inp} value={num} onChange={e=>setNum(e.target.value)} inputMode="numeric" placeholder="מספר סניף"/>{err&&<div style={{color:'#F0A9A0',fontSize:13,marginTop:10,textAlign:'center'}}>{err}</div>}<button style={btn(true)} onClick={enter}>{'\u05db\u05e0\u05d9\u05e1\u05d4'}</button><button style={{...btn(false),marginTop:8}} onClick={()=>{setErr('');setMode('home')}}>{'\u05d7\u05d6\u05e8\u05d4'}</button></>}
+  async function create(){setErr('');const nn=num.replace(/\D/g,'');if(!nn){setErr('הזן מספר סניף (ספרות)');return}if(!name.trim()){setErr('הזן שם סניף');return}if(code.length<3){setErr('קוד אדמין — לפחות 3 תווים');return}setBusy(true);const ex=await sget(mk(nn));if(ex){setBusy(false);setErr('סניף '+nn+' כבר תפוס — בחר מספר אחר');return}const rec=String(Math.floor(10000000+Math.random()*90000000));const ok=await sset(mk(nn),{name:name.trim(),code,createdAt:new Date().toISOString(),setup:true,q:q.trim(),a:a.trim(),rec});setBusy(false);if(!ok){setErr('שגיאת שמירה, נסה שוב');return}setCreated({num:nn,rec})}
+  function enter(){const nn=num.replace(/\D/g,'');if(!nn){setErr('הזן מספר סניף');return}go(nn)}
+  const title=<><div style={{fontFamily:df,fontWeight:800,fontSize:26,textAlign:'center'}}>{'🎯 לוח היעדים'}</div><div style={{color:C.sub,fontSize:13,textAlign:'center',marginTop:6,marginBottom:16}}>{'לוח יעדים יומי לסניף · בינגו ביצועים'}</div></>
+  if(created)return(<div style={wrap}><div style={card}>{title}
+    <div style={{fontSize:40,textAlign:'center'}}>{'✅'}</div>
+    <div style={{textAlign:'center',fontWeight:800,fontSize:18,marginTop:6}}>{'סניף '+created.num+' נוצר!'}</div>
+    <div style={{background:C.panel2,border:`1px solid ${C.gold}`,borderRadius:12,padding:14,marginTop:14,textAlign:'center'}}>
+      <div style={{color:C.sub,fontSize:12}}>{'קוד שחזור (לאיפוס הקוד אם תשכח):'}</div>
+      <div style={{fontSize:26,fontWeight:800,letterSpacing:3,color:C.gold,marginTop:6,direction:'ltr'}}>{created.rec}</div>
+      <div style={{color:C.sub,fontSize:12,marginTop:6}}>{'שמור אותו במקום בטוח — הוא לא יוצג שוב.'}</div>
+    </div>
+    <button style={btn(true)} onClick={()=>go(created.num)}>{'המשך להגדרת הבנקאים'}</button>
+  </div></div>)
+  return(<div style={wrap}><div style={card}>{title}
+    {mode==='home'&&<><button style={btn(true)} onClick={()=>{setErr('');setMode('create')}}>{'➕ צור סניף חדש'}</button><button style={btn(false)} onClick={()=>{setErr('');setMode('enter')}}>{'🔑 כניסה לסניף קיים'}</button></>}
+    {mode==='create'&&<>
+      <input style={inp} value={num} onChange={e=>setNum(e.target.value)} inputMode="numeric" placeholder="מספר סניף (למשל 4021)"/>
+      <input style={inp} value={name} onChange={e=>setName(e.target.value)} placeholder="שם הסניף (יופיע בכותרת)"/>
+      <input style={inp} value={code} onChange={e=>setCode(e.target.value)} placeholder="קוד אדמין (לעריכה)"/>
+      <div style={{color:C.sub,fontSize:12,marginTop:16,marginBottom:-2,textAlign:'right'}}>{'שאלת שחזור (לא חובה — לאיפוס הקוד אם תשכח):'}</div>
+      <input style={inp} value={q} onChange={e=>setQ(e.target.value)} placeholder="שאלה (למשל: שם החיה הראשונה)"/>
+      <input style={inp} value={a} onChange={e=>setA(e.target.value)} placeholder="תשובה"/>
+      {err&&<div style={{color:'#F0A9A0',fontSize:13,marginTop:10,textAlign:'center'}}>{err}</div>}
+      <button style={btn(true)} disabled={busy} onClick={create}>{busy?'יוצר…':'צור והמשך'}</button>
+      <button style={{...btn(false),marginTop:8}} onClick={()=>{setErr('');setMode('home')}}>{'חזרה'}</button>
+    </>}
+    {mode==='enter'&&<>
+      <input style={inp} value={num} onChange={e=>setNum(e.target.value)} inputMode="numeric" placeholder="מספר סניף"/>
+      {err&&<div style={{color:'#F0A9A0',fontSize:13,marginTop:10,textAlign:'center'}}>{err}</div>}
+      <button style={btn(true)} onClick={enter}>{'כניסה'}</button>
+      <button style={{...btn(false),marginTop:8}} onClick={()=>{setErr('');setMode('home')}}>{'חזרה'}</button>
+    </>}
   </div></div>)
 }
 
@@ -123,6 +149,7 @@ export default function App(){
   const[loading,setLoading]=useState(true);const[saveErr,setSaveErr]=useState(false)
   const[admin,setAdmin]=useState(false);const[codeOpen,setCodeOpen]=useState(false)
   const[code,setCode]=useState('');const[codeErr,setCodeErr]=useState(false)
+  const[recMode,setRecMode]=useState(false);const[recAns,setRecAns]=useState('');const[recCode,setRecCode]=useState('');const[recNew,setRecNew]=useState('');const[recErr,setRecErr]=useState('')
   const[showPanel,setShowPanel]=useState(false);const[copyFrom,setCopyFrom]=useState('');const[helpOpen,setHelpOpen]=useState(false)
   const[celebrate,setCelebrate]=useState(null);const pbr=useRef(new Set());const skr=useRef(false)
   const branch=getBranch()
@@ -158,6 +185,7 @@ export default function App(){
   const pDel=i=>{const n=pool.filter((_,x)=>x!==i);setPool(n);sset(pk(branch),n)}
   async function csf(sd){if(!sd)return;const src=await sget(kf(branch,sd));if(!src)return;await cm(b=>{b.targets=src.targets.map(t=>({...t}));b.rows=src.rows.map(r=>({...r}));b.cells={};return b})}
   function tu(){if(meta&&code===meta.code){setAdmin(true);setCodeOpen(false);setCode('');setCodeErr(false)}else setCodeErr(true)}
+  function doReset(){const ansOk=meta.a&&recAns.trim()&&recAns.trim().toLowerCase()===String(meta.a).trim().toLowerCase();const codeOk=recCode&&(recCode===meta.rec||recCode===MASTER);if(!(ansOk||codeOk)){setRecErr('תשובה או קוד שחזור שגויים');return}if(recNew.length<3){setRecErr('קוד חדש — לפחות 3 תווים');return}sset(mk(branch),{...meta,code:recNew}).then(ok=>{if(!ok){setRecErr('שגיאת שמירה');return}setMeta(m=>({...m,code:recNew}));setAdmin(true);setCodeOpen(false);setRecMode(false);setCode('');setRecAns('');setRecCode('');setRecNew('');setRecErr('')})}
 
   const st=board?(()=>{const tot=board.rows.length*board.targets.length;const dn=Object.keys(board.cells).length;const fl=board.rows.filter(r=>board.targets.length>0&&board.targets.every(t=>board.cells[`${r.id}::${t.id}`])).length;return{tot,dn,fl,pct:tot?Math.round((dn/tot)*100):0}})():null
   const df=`'Frank Ruhl Libre','Heebo',Georgia,serif`;const ff=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
@@ -260,12 +288,24 @@ export default function App(){
         <button onClick={()=>setHelpOpen(false)} style={{width:'100%',marginTop:18,background:C.gold,color:C.panel2,border:'none',borderRadius:12,padding:12,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'\u05d4\u05d1\u05e0\u05ea\u05d9'}</button>
       </Ov>}
 
-      {codeOpen&&(<Ov onClose={()=>{setCodeOpen(false);setCode('');setCodeErr(false)}}>
+      {codeOpen&&(<Ov onClose={()=>{setCodeOpen(false);setCode('');setCodeErr(false);setRecMode(false);setRecErr('')}}>
+        {!recMode?<>
         <div style={{fontFamily:df,fontSize:21,fontWeight:800,marginBottom:8}}>{'כניסת אדמין 🔐'}</div>
         <div style={{color:C.sub,fontSize:13,marginBottom:16}}>{'הזן קוד כדי לפתוח את לשונית הניהול.'}</div>
-        <input autoFocus type="password" inputMode="numeric" value={code} onChange={e=>{setCode(e.target.value);setCodeErr(false)}} onKeyDown={e=>e.key==='Enter'&&tu()} placeholder="● ● ● ●" style={{width:'100%',background:C.panel2,color:C.white,border:`2px solid ${codeErr?C.pend:C.line}`,borderRadius:12,padding:'14px',fontSize:22,textAlign:'center',letterSpacing:10,outline:'none',fontFamily:ff}}/>
+        <input autoFocus type="password" inputMode="numeric" value={code} onChange={e=>{setCode(e.target.value);setCodeErr(false)}} onKeyDown={e=>e.key==='Enter'&&tu()} placeholder="● ● ● ●" style={{width:'100%',boxSizing:'border-box',background:C.panel2,color:C.white,border:`2px solid ${codeErr?C.pend:C.line}`,borderRadius:12,padding:'14px',fontSize:22,textAlign:'center',letterSpacing:10,outline:'none',fontFamily:ff}}/>
         {codeErr&&<div style={{color:C.pend,fontSize:13,marginTop:8,textAlign:'center'}}>{'קוד שגוי.'}</div>}
         <button onClick={tu} style={{width:'100%',marginTop:16,background:C.gold,color:C.panel2,border:'none',borderRadius:12,padding:'13px',fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'כניסה'}</button>
+        <div onClick={()=>{setRecMode(true);setCodeErr(false)}} style={{color:C.goldSoft,fontSize:13,textAlign:'center',marginTop:14,cursor:'pointer',textDecoration:'underline'}}>{'שכחתי את הקוד'}</div>
+        </>:<>
+        <div style={{fontFamily:df,fontSize:21,fontWeight:800,marginBottom:8}}>{'איפוס קוד אדמין 🔑'}</div>
+        <div style={{color:C.sub,fontSize:13,marginBottom:14}}>{'ענה על שאלת השחזור, או הזן קוד שחזור / קוד אדמין-על, ובחר קוד חדש.'}</div>
+        {meta.q?<><div style={{fontSize:14,fontWeight:700,marginBottom:2,textAlign:'right'}}>{meta.q}</div><input value={recAns} onChange={e=>{setRecAns(e.target.value);setRecErr('')}} placeholder="תשובה לשאלת השחזור" style={ri(C,ff)}/></>:<div style={{color:C.sub,fontSize:13,marginBottom:2,textAlign:'right'}}>{'(לא הוגדרה שאלת שחזור לסניף זה)'}</div>}
+        <input value={recCode} onChange={e=>{setRecCode(e.target.value);setRecErr('')}} placeholder="קוד שחזור / קוד אדמין-על" style={ri(C,ff)}/>
+        <input type="password" value={recNew} onChange={e=>{setRecNew(e.target.value);setRecErr('')}} placeholder="קוד אדמין חדש" style={ri(C,ff)}/>
+        {recErr&&<div style={{color:C.pend,fontSize:13,marginTop:8,textAlign:'center'}}>{recErr}</div>}
+        <button onClick={doReset} style={{width:'100%',marginTop:14,background:C.gold,color:C.panel2,border:'none',borderRadius:12,padding:'13px',fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'אפס והיכנס'}</button>
+        <div onClick={()=>{setRecMode(false);setRecErr('')}} style={{color:C.goldSoft,fontSize:13,textAlign:'center',marginTop:12,cursor:'pointer',textDecoration:'underline'}}>{'חזרה'}</div>
+        </>}
       </Ov>)}
 
       {admin&&showPanel&&<AP C={C} pool={pool} date={date} copyFrom={copyFrom} setCopyFrom={setCopyFrom} onClose={()=>setShowPanel(false)} onLock={()=>{setAdmin(false);setShowPanel(false)}} onClearDay={cd} onEditPoolName={ep} onCommitPool={cp} onAddPool={pAdd} onRemovePool={pDel} onCopyStructure={csf} display={df}/>}
