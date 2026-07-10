@@ -6,7 +6,7 @@ const TOKEN = process.env.TELEGRAM_TOKEN
 const CHAT = process.env.TELEGRAM_CHAT_ID
 const BRANCH = process.env.BRANCH || '176'
 const BASE = process.env.BASE_URL || 'https://bingo-targets-board-roi-roshinovic-s-projects.vercel.app'
-const FORCE = process.env.FORCE === '1'
+const FORCE = process.env.FORCE === '1' || process.env.GITHUB_EVENT_NAME === 'workflow_dispatch'
 
 if (!TOKEN || !CHAT) { console.error('missing TELEGRAM_TOKEN / TELEGRAM_CHAT_ID'); process.exit(1) }
 
