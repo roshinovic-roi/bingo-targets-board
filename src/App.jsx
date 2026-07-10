@@ -63,6 +63,9 @@ export default function App(){
   const past=date<ts();const locked=past&&!admin
 
   const boardRef=useRef(null)
+  const capRef=useRef(null)
+  const[capturing,setCapturing]=useState(false)
+  const NOOP=()=>{}
   const[sumOpen,setSumOpen]=useState(false);const[sumText,setSumText]=useState('');const[copied,setCopied]=useState(false);const[tab,setTab]=useState('board')
   function buildSummary(){if(!board)return'';const rows=board.rows,tg=board.targets;const tot=rows.length*tg.length;const dn=Object.keys(board.cells).filter(k=>board.cells[k]).length;const pct=tot?Math.round(dn/tot*100):0;const bingo=rows.filter(r=>tg.length>0&&tg.every(t=>board.cells[`${r.id}::${t.id}`]));let s=`🎯 סיכום יום · ${hd(date)}\n\n✅ הושלמו: ${dn}/${tot} (${pct}%)\n`;if(bingo.length)s+=`🎉 בינגו מלא: ${bingo.map(r=>r.name).join(', ')}\n`;s+=`\n👤 לפי בנקאי:\n`;rows.forEach(r=>{const c=tg.filter(t=>board.cells[`${r.id}::${t.id}`]).length;s+=`• ${r.name}: ${c}/${tg.length}${tg.length>0&&c===tg.length?' 🏆':''}\n`});s+=`\n🎯 לפי יעד:\n`;tg.forEach(t=>{const c=rows.filter(r=>board.cells[`${r.id}::${t.id}`]).length;s+=`• ${t.label}: ${c}/${rows.length}\n`});const rep=board.reports||{};const rl=rows.map(r=>{const rr=rep[r.id]||{};const c=parseInt(rr.credit,10)||0;const g=parseInt(rr.recruit,10)||0;const p=[];if(c>0)p.push(`${c} א ₪ אשראי`);if(g>0)p.push(g===1?'גיוס אחד':`${g} גיוסים`);return p.length?`• ${r.name}: ${p.join(' ו־')}`:null}).filter(Boolean);if(rl.length)s+=`\n📊 דיווח ביצועים:\n`+rl.join('\n')+'\n';return s}
   function openSummary(){setSumText(buildSummary());setCopied(false);setSumOpen(true)}
@@ -71,7 +74,7 @@ export default function App(){
     // ב-iOS תפריט השיתוף מצרף את כתובת הדף, ווואטסאפ מציג לינק במקום הטקסט.
     // לכן מעתיקים את הסיכום המדויק ופותחים את וואטסאפ עם הטקסט מוכן מראש.
     copySummary();try{window.open('https://wa.me/?text='+encodeURIComponent(sumText),'_blank')}catch(e){}}
-  async function shot(){if(!boardRef.current)return;const sc=[...boardRef.current.querySelectorAll('*')].find(el=>{const s=getComputedStyle(el);return s.overflowX==='auto'||s.overflowX==='scroll'})||boardRef.current;const prev={overflowX:sc.style.overflowX,width:sc.style.width,maxWidth:sc.style.maxWidth};sc.style.overflowX='visible';sc.style.width='max-content';sc.style.maxWidth='none';const restore=()=>{sc.style.overflowX=prev.overflowX;sc.style.width=prev.width;sc.style.maxWidth=prev.maxWidth};try{const canvas=await html2canvas(sc,{backgroundColor:'#0E1B2E',scale:2,useCORS:true,width:sc.scrollWidth});restore();canvas.toBlob(async blob=>{if(!blob)return;const file=new File([blob],`bingo-${date}.png`,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:`לוח יעדים ${date}`});return}catch(e){if(e.name==='AbortError')return}}const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`bingo-${date}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)},'image/png')}catch(e){restore();alert('שגיאה בצילום המסך: '+e.message)}}
+  async function shot(){if(!board)return;setCapturing(true);await new Promise(r=>setTimeout(r,180));try{const el=capRef.current;if(!el)throw new Error('render');const canvas=await html2canvas(el,{backgroundColor:'#0E1B2E',scale:2,useCORS:true});canvas.toBlob(async blob=>{if(!blob)return;const file=new File([blob],`bingo-${date}.png`,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:`לוח יעדים ${date}`});return}catch(e){if(e.name==='AbortError')return}}const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`bingo-${date}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)},'image/png')}catch(e){alert('שגיאה בצילום המסך: '+e.message)}finally{setCapturing(false)}}
 
   return(
     /* ── overflowX:hidden מונע גלילה אופקית של הדף כולו ── */
@@ -129,6 +132,13 @@ export default function App(){
         {board&&!loading&&<div style={{display:'flex',gap:10,justifyContent:'center',marginTop:16,flexWrap:'wrap'}}>
           <button onClick={shot} style={{display:'flex',alignItems:'center',gap:8,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'11px 18px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>{'📸 צילום מסך'}</button>
           <button onClick={openSummary} style={{display:'flex',alignItems:'center',gap:8,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'11px 18px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>{'📋 סיכום יום'}</button>
+        </div>}
+
+        {capturing&&board&&<div ref={capRef} aria-hidden style={{position:'absolute',left:-99999,top:0,width:Math.max(600,170+board.targets.length*64),background:'#0E1B2E',padding:22,boxSizing:'border-box'}}>
+          <div style={{color:C.gold,fontFamily:df,fontWeight:800,fontSize:23,marginBottom:12,textAlign:'right',direction:'rtl'}}>{`🎯 לוח יעדים · ${hd(date)}`}</div>
+          <Bo board={board} admin={false} locked={false} pool={pool} celebrate={false} onToggle={NOOP} onRenameTarget={NOOP} onRemoveTarget={NOOP} onRemoveRow={NOOP} onSetRowName={NOOP} onAddTarget={NOOP} onAddRow={NOOP}/>
+          <div style={{color:C.gold,fontFamily:df,fontWeight:800,fontSize:23,margin:'24px 0 12px',textAlign:'right',direction:'rtl'}}>{'📊 דיווח ביצועים'}</div>
+          <Rep C={C} board={board} locked={true} capture onChange={NOOP} onSave={NOOP}/>
         </div>}
       </div>
 
@@ -245,7 +255,7 @@ function Bo({board,admin,locked,pool,celebrate,onToggle,onRenameTarget,onRemoveT
 const RF=({children})=><>{children}</>
 
 /* ══ PERFORMANCE REPORT ══ */
-function Rep({C,board,locked,onChange,onSave}){
+function Rep({C,board,locked,capture,onChange,onSave}){
   const f=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
   const rows=board.rows,rep=board.reports||{}
   const inp={width:'100%',boxSizing:'border-box',background:locked?'#EFEDE4':'#fff',border:`1px solid ${C.line}`,borderRadius:10,textAlign:'center',fontFamily:f,fontSize:17,fontWeight:800,color:C.ink,padding:'13px 4px',outline:'none'}
@@ -258,11 +268,11 @@ function Rep({C,board,locked,onChange,onSave}){
         <div style={th}>{'גיוס'}</div>
         {rows.map(r=>{const v=rep[r.id]||{};return(<RF key={r.id}>
           <div style={{background:'#FBFAF3',border:`1px solid ${C.line}`,borderRadius:10,padding:'13px 10px',textAlign:'right',fontFamily:f,fontWeight:800,fontSize:15,color:C.ink,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{r.name}</div>
-          <input type="tel" inputMode="numeric" disabled={locked} value={v.credit||''} onChange={e=>onChange(r.id,'credit',e.target.value)} onBlur={onSave} placeholder="0" style={inp}/>
-          <input type="tel" inputMode="numeric" disabled={locked} value={v.recruit||''} onChange={e=>onChange(r.id,'recruit',e.target.value)} onBlur={onSave} placeholder="0" style={inp}/>
+          <input type="tel" inputMode="numeric" disabled={locked||capture} value={v.credit||''} onChange={e=>onChange(r.id,'credit',e.target.value)} onBlur={onSave} placeholder="0" style={inp}/>
+          <input type="tel" inputMode="numeric" disabled={locked||capture} value={v.recruit||''} onChange={e=>onChange(r.id,'recruit',e.target.value)} onBlur={onSave} placeholder="0" style={inp}/>
         </RF>)})}
       </div>
-      <div style={{color:C.ink,opacity:.6,fontSize:12,marginTop:12,textAlign:'center',fontFamily:f}}>{locked?'🔒 יום עבר · לצפייה בלבד.':'הזינו ביצועים · אשראי באלפי ₪ (א׳). נשמר אוטומטית.'}</div>
+      {!capture&&<div style={{color:C.ink,opacity:.6,fontSize:12,marginTop:12,textAlign:'center',fontFamily:f}}>{locked?'🔒 יום עבר · לצפייה בלבד.':'הזינו ביצועים · אשראי באלפי ₪ (א׳). נשמר אוטומטית.'}</div>}
     </div>
   )
 }
