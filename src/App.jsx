@@ -5,11 +5,15 @@ const sb=createClient('https://ftfaporbookulrspamjn.supabase.co','eyJhbGciOiJIUz
 async function sget(k){const{data}=await sb.from('bingo_kv').select('value').eq('key',k).maybeSingle();return data?.value??null}
 async function sset(k,v){const{error}=await sb.from('bingo_kv').upsert({key:k,value:v,updated_at:new Date().toISOString()});return!error}
 async function slist(p){const{data}=await sb.from('bingo_kv').select('key').like('key',`${p}%`);return(data||[]).map(d=>d.key)}
-const DP=['\u05de\u05d5\u05e8\u05df','\u05d3\u05d5\u05e8','\u05e9\u05e8\u05d9\u05ea','\u05d0\u05d1\u05d0\u05dc','\u05d0\u05d9\u05e0\u05d0\u05e1','\u05d0\u05dc\u05d9\u05d0\u05df','\u05d1\u05e8'],AC='2103'
+const DP=['\u05de\u05d5\u05e8\u05df','\u05d3\u05d5\u05e8','\u05e9\u05e8\u05d9\u05ea','\u05d0\u05d1\u05d0\u05dc','\u05d0\u05d9\u05e0\u05d0\u05e1','\u05d0\u05dc\u05d9\u05d0\u05df','\u05d1\u05e8']
 const C={bg:'#0E1B2E',panel:'#13253C',panel2:'#0B1626',board:'#F6F2E7',ink:'#16283C',sub:'#66788A',gold:'#C7A24A',goldSoft:'#E7D7A6',line:'#263B54',boardLine:'#E0D8C4',pendBg:'#F4E0DC',pendBd:'#E3B6AE',pend:'#B8433A',doneBg:'#DCEEDF',doneBd:'#A4D2AF',done:'#2E9E5B',white:'#FBF9F3'}
 const uid=()=>Math.random().toString(36).slice(2,9)
 const ts=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-const kf=d=>`board:${d}`
+const kf=(b,d)=>`b:${b}:board:${d}`
+const pk=b=>`b:${b}:pool`
+const mk=b=>`b:${b}:meta`
+const bp=b=>`b:${b}:board:`
+const getBranch=()=>{const m=(typeof location!=='undefined'?location.pathname:'').match(/\/s\/([^/?#]+)/);return m?decodeURIComponent(m[1]):null}
 const hd=s=>{try{const[y,m,d]=s.split('-');const dt=new Date(+y,+m-1,+d);const dn=['\u05e8\u05d0\u05e9\u05d5\u05df','\u05e9\u05e0\u05d9','\u05e9\u05dc\u05d9\u05e9\u05d9','\u05e8\u05d1\u05d9\u05e2\u05d9','\u05d7\u05de\u05d9\u05e9\u05d9','\u05e9\u05d9\u05e9\u05d9','\u05e9\u05d1\u05ea'];return`\u05d9\u05d5\u05dd ${dn[dt.getDay()]}, ${+d}.${+m}.${y}`}catch{return s}}
 
 function EL({value,onSave,disabled,style}){
@@ -20,6 +24,37 @@ function EL({value,onSave,disabled,style}){
   return<div onClick={()=>{if(!disabled){setDr(value);setEd(true)}}} title={disabled?undefined:'\u05dc\u05d7\u05e5 \u05dc\u05e2\u05e8\u05d9\u05db\u05d4'} style={{cursor:disabled?'default':'text',padding:'4px 3px',borderRadius:7,userSelect:'none',...style}} onMouseEnter={e=>{if(!disabled)e.currentTarget.style.background='rgba(199,162,74,.12)'}} onMouseLeave={e=>{e.currentTarget.style.background='transparent'}}>{value}</div>
 }
 
+function Landing({C,df,ff}){
+  const[mode,setMode]=useState('home')
+  const[num,setNum]=useState('');const[name,setName]=useState('');const[code,setCode]=useState('')
+  const[err,setErr]=useState('');const[busy,setBusy]=useState(false)
+  const wrap={minHeight:'100vh',background:C.bg,color:C.white,fontFamily:ff,display:'flex',alignItems:'center',justifyContent:'center',padding:20}
+  const card={width:'100%',maxWidth:420,background:C.panel,border:`1px solid ${C.line}`,borderRadius:20,padding:24,boxSizing:'border-box'}
+  const inp={width:'100%',boxSizing:'border-box',background:C.panel2,color:C.white,border:`1px solid ${C.line}`,borderRadius:12,padding:'13px 14px',fontFamily:ff,fontSize:15,outline:'none',marginTop:10,direction:'rtl'}
+  const btn=p=>({width:'100%',background:p?C.gold:'transparent',color:p?C.panel2:C.goldSoft,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:13,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff,marginTop:12})
+  const go=n=>{location.href='/s/'+encodeURIComponent(n)}
+  async function create(){setErr('');const nn=num.replace(/\D/g,'');if(!nn){setErr('\u05d4\u05d6\u05df \u05de\u05e1\u05e4\u05e8 \u05e1\u05e0\u05d9\u05e3 (\u05e1\u05e4\u05e8\u05d5\u05ea)');return}if(!name.trim()){setErr('\u05d4\u05d6\u05df \u05e9\u05dd \u05e1\u05e0\u05d9\u05e3');return}if(code.length<3){setErr('\u05e7\u05d5\u05d3 \u05d0\u05d3\u05de\u05d9\u05df \u2014 \u05dc\u05e4\u05d7\u05d5\u05ea 3 \u05ea\u05d5\u05d5\u05d9\u05dd');return}setBusy(true);const ex=await sget(mk(nn));if(ex){setBusy(false);setErr(`\u05e1\u05e0\u05d9\u05e3 ${nn} \u05db\u05d1\u05e8 \u05ea\u05e4\u05d5\u05e1 \u2014 \u05d1\u05d7\u05e8 \u05de\u05e1\u05e4\u05e8 \u05d0\u05d7\u05e8`);return}const ok=await sset(mk(nn),{name:name.trim(),code,createdAt:new Date().toISOString()});setBusy(false);if(!ok){setErr('\u05e9\u05d2\u05d9\u05d0\u05ea \u05e9\u05de\u05d9\u05e8\u05d4, \u05e0\u05e1\u05d4 \u05e9\u05d5\u05d1');return}go(nn)}
+  function enter(){const nn=num.replace(/\D/g,'');if(!nn){setErr('\u05d4\u05d6\u05df \u05de\u05e1\u05e4\u05e8 \u05e1\u05e0\u05d9\u05e3');return}go(nn)}
+  return(<div style={wrap}><div style={card}>
+    <div style={{fontFamily:df,fontWeight:800,fontSize:26,textAlign:'center'}}>{'\ud83c\udfaf \u05dc\u05d5\u05d7 \u05d4\u05d9\u05e2\u05d3\u05d9\u05dd'}</div>
+    <div style={{color:C.sub,fontSize:13,textAlign:'center',marginTop:6,marginBottom:16}}>{'\u05dc\u05d5\u05d7 \u05d9\u05e2\u05d3\u05d9\u05dd \u05d9\u05d5\u05de\u05d9 \u05dc\u05e1\u05e0\u05d9\u05e3 \u00b7 \u05d1\u05d9\u05e0\u05d2\u05d5 \u05d1\u05d9\u05e6\u05d5\u05e2\u05d9\u05dd'}</div>
+    {mode==='home'&&<><button style={btn(true)} onClick={()=>{setErr('');setMode('create')}}>{'\u2795 \u05e6\u05d5\u05e8 \u05e1\u05e0\u05d9\u05e3 \u05d7\u05d3\u05e9'}</button><button style={btn(false)} onClick={()=>{setErr('');setMode('enter')}}>{'\ud83d\udd11 \u05db\u05e0\u05d9\u05e1\u05d4 \u05dc\u05e1\u05e0\u05d9\u05e3 \u05e7\u05d9\u05d9\u05dd'}</button></>}
+    {mode==='create'&&<><input style={inp} value={num} onChange={e=>setNum(e.target.value)} inputMode="numeric" placeholder="\u05de\u05e1\u05e4\u05e8 \u05e1\u05e0\u05d9\u05e3 (\u05dc\u05de\u05e9\u05dc 4021)"/><input style={inp} value={name} onChange={e=>setName(e.target.value)} placeholder="\u05e9\u05dd \u05d4\u05e1\u05e0\u05d9\u05e3 (\u05d9\u05d5\u05e4\u05d9\u05e2 \u05d1\u05db\u05d5\u05ea\u05e8\u05ea)"/><input style={inp} value={code} onChange={e=>setCode(e.target.value)} placeholder="\u05e7\u05d5\u05d3 \u05d0\u05d3\u05de\u05d9\u05df (\u05dc\u05e2\u05e8\u05d9\u05db\u05d4)"/>{err&&<div style={{color:'#F0A9A0',fontSize:13,marginTop:10,textAlign:'center'}}>{err}</div>}<button style={btn(true)} disabled={busy} onClick={create}>{busy?'\u05d9\u05d5\u05e6\u05e8\u2026':'\u05e6\u05d5\u05e8 \u05d5\u05d4\u05de\u05e9\u05da'}</button><button style={{...btn(false),marginTop:8}} onClick={()=>{setErr('');setMode('home')}}>{'\u05d7\u05d6\u05e8\u05d4'}</button></>}
+    {mode==='enter'&&<><input style={inp} value={num} onChange={e=>setNum(e.target.value)} inputMode="numeric" placeholder="\u05de\u05e1\u05e4\u05e8 \u05e1\u05e0\u05d9\u05e3"/>{err&&<div style={{color:'#F0A9A0',fontSize:13,marginTop:10,textAlign:'center'}}>{err}</div>}<button style={btn(true)} onClick={enter}>{'\u05db\u05e0\u05d9\u05e1\u05d4'}</button><button style={{...btn(false),marginTop:8}} onClick={()=>{setErr('');setMode('home')}}>{'\u05d7\u05d6\u05e8\u05d4'}</button></>}
+  </div></div>)
+}
+
+function NotFound({C,df,ff,branch}){
+  return(<div style={{minHeight:'100vh',background:C.bg,color:C.white,fontFamily:ff,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+    <div style={{maxWidth:420,textAlign:'center'}}>
+      <div style={{fontSize:44}}>{'\ud83d\uddfa\ufe0f'}</div>
+      <div style={{fontFamily:df,fontWeight:800,fontSize:22,marginTop:8}}>{`\u05e1\u05e0\u05d9\u05e3 ${branch} \u05dc\u05d0 \u05e7\u05d9\u05d9\u05dd`}</div>
+      <div style={{color:C.sub,fontSize:14,marginTop:8}}>{'\u05d4\u05e7\u05d9\u05e9\u05d5\u05e8 \u05d0\u05d9\u05e0\u05d5 \u05de\u05d7\u05d5\u05d1\u05e8 \u05dc\u05e1\u05e0\u05d9\u05e3 \u05e4\u05e2\u05d9\u05dc.'}</div>
+      <button onClick={()=>location.href='/'} style={{marginTop:18,background:C.gold,color:C.panel2,border:'none',borderRadius:12,padding:'12px 20px',fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'\u05dc\u05d3\u05e3 \u05d4\u05e8\u05d0\u05e9\u05d9'}</button>
+    </div>
+  </div>)
+}
+
 export default function App(){
   const[date,setDate]=useState(ts());const[pool,setPool]=useState(DP);const[board,setBoard]=useState(null)
   const[loading,setLoading]=useState(true);const[saveErr,setSaveErr]=useState(false)
@@ -27,23 +62,25 @@ export default function App(){
   const[code,setCode]=useState('');const[codeErr,setCodeErr]=useState(false)
   const[showPanel,setShowPanel]=useState(false);const[copyFrom,setCopyFrom]=useState('');const[helpOpen,setHelpOpen]=useState(false)
   const[celebrate,setCelebrate]=useState(null);const pbr=useRef(new Set());const skr=useRef(false)
+  const branch=getBranch()
+  const[meta,setMeta]=useState(undefined)
 
-  const lp=useCallback(async()=>{const p=await sget('pool');if(p&&Array.isArray(p)&&p.length)setPool(p)},[])
+  const lp=useCallback(async()=>{const p=await sget(pk(branch));if(p&&Array.isArray(p)&&p.length)setPool(p)},[branch])
   const lb=useCallback(async(d,s)=>{
     if(!s)setLoading(true)
-    let b=await sget(kf(d))
-    if(!b&&d>=ts()){const ks=await slist('board:');const ds=ks.map(k=>k.replace('board:','')).filter(x=>x<d).sort();const pv=ds.length?await sget(kf(ds[ds.length-1])):null;if(pv){b={targets:pv.targets.map(t=>({...t})),rows:pv.rows.map(r=>({...r})),cells:{}}}else{const pn=(await sget('pool'))||DP;b={targets:[{id:uid(),label:'\u05d9\u05e2\u05d3 1'},{id:uid(),label:'\u05d9\u05e2\u05d3 2'},{id:uid(),label:'\u05d9\u05e2\u05d3 3'}],rows:pn.map(n=>({id:uid(),name:n})),cells:{}}}}
+    let b=await sget(kf(branch,d))
+    if(!b&&d>=ts()){const ks=await slist(bp(branch));const ds=ks.map(k=>k.replace(bp(branch),'')).filter(x=>x<d).sort();const pv=ds.length?await sget(kf(branch,ds[ds.length-1])):null;if(pv){b={targets:pv.targets.map(t=>({...t})),rows:pv.rows.map(r=>({...r})),cells:{}}}else{const pn=(await sget(pk(branch)))||DP;b={targets:[{id:uid(),label:'\u05d9\u05e2\u05d3 1'},{id:uid(),label:'\u05d9\u05e2\u05d3 2'},{id:uid(),label:'\u05d9\u05e2\u05d3 3'}],rows:pn.map(n=>({id:uid(),name:n})),cells:{}}}}
     setBoard(b);if(!s)setLoading(false)
-  },[])
+  },[branch])
 
-  useEffect(()=>{const ch=sb.channel('bg').on('postgres_changes',{event:'*',schema:'public',table:'bingo_kv'},pl=>{if(skr.current)return;const k=pl.new?.key||pl.old?.key;if(k==='pool')lp();if(k===kf(date))lb(date,true)}).subscribe();return()=>sb.removeChannel(ch)},[date,lp,lb])
-  useEffect(()=>{lp()},[lp]);useEffect(()=>{lb(date,false)},[date,lb])
+  useEffect(()=>{if(!branch)return;const ch=sb.channel('bg-'+branch).on('postgres_changes',{event:'*',schema:'public',table:'bingo_kv'},pl=>{if(skr.current)return;const k=pl.new?.key||pl.old?.key;if(k===pk(branch))lp();if(k===kf(branch,date))lb(date,true)}).subscribe();return()=>sb.removeChannel(ch)},[date,lp,lb,branch])
+  useEffect(()=>{if(!branch){setMeta(null);return}sget(mk(branch)).then(m=>setMeta(m||null))},[branch]);useEffect(()=>{if(branch&&meta)lp()},[lp,branch,meta]);useEffect(()=>{if(branch&&meta)lb(date,false)},[date,lb,branch,meta])
   useEffect(()=>{if(!board)return;const nb=new Set();board.rows.forEach(r=>{if(board.targets.length>0&&board.targets.every(t=>board.cells[`${r.id}::${t.id}`]))nb.add(r.id)});for(const rid of nb){if(!pbr.current.has(rid)){setCelebrate(rid);setTimeout(()=>setCelebrate(null),2500);break}};pbr.current=nb},[board])
 
-  async function tc(ri,ti){if(date<ts()&&!admin)return;skr.current=true;const lt=(await sget(kf(date)))||board;const ck=`${ri}::${ti}`;const cells={...(lt.cells||{})};if(cells[ck])delete cells[ck];else cells[ck]=true;const nx={...lt,cells};setBoard(nx);const ok=await sset(kf(date),nx);setSaveErr(!ok);setTimeout(()=>{skr.current=false},1000)}
-  async function cm(fn){skr.current=true;const lt=(await sget(kf(date)))||board;const nx=fn(JSON.parse(JSON.stringify(lt)));setBoard(nx);const ok=await sset(kf(date),nx);setSaveErr(!ok);setTimeout(()=>{skr.current=false},1000)}
+  async function tc(ri,ti){if(date<ts()&&!admin)return;skr.current=true;const lt=(await sget(kf(branch,date)))||board;const ck=`${ri}::${ti}`;const cells={...(lt.cells||{})};if(cells[ck])delete cells[ck];else cells[ck]=true;const nx={...lt,cells};setBoard(nx);const ok=await sset(kf(branch,date),nx);setSaveErr(!ok);setTimeout(()=>{skr.current=false},1000)}
+  async function cm(fn){skr.current=true;const lt=(await sget(kf(branch,date)))||board;const nx=fn(JSON.parse(JSON.stringify(lt)));setBoard(nx);const ok=await sset(kf(branch,date),nx);setSaveErr(!ok);setTimeout(()=>{skr.current=false},1000)}
   function repChange(rid,field,val){if(date<ts()&&!admin)return;const v=(val||'').replace(/[^0-9]/g,'').slice(0,9);setBoard(b=>{const reports={...(b.reports||{})};reports[rid]={...(reports[rid]||{}),[field]:v};return {...b,reports}})}
-  function repSave(){if(date<ts()&&!admin)return;setBoard(b=>{if(b){skr.current=true;sset(kf(date),b).then(ok=>{setSaveErr(!ok);setTimeout(()=>{skr.current=false},800)})}return b})}
+  function repSave(){if(date<ts()&&!admin)return;setBoard(b=>{if(b){skr.current=true;sset(kf(branch,date),b).then(ok=>{setSaveErr(!ok);setTimeout(()=>{skr.current=false},800)})}return b})}
   const at=()=>cm(b=>{b.targets.push({id:uid(),label:`\u05d9\u05e2\u05d3 ${b.targets.length+1}`});return b})
   const rt=tid=>cm(b=>{b.targets=b.targets.filter(t=>t.id!==tid);Object.keys(b.cells).forEach(k=>{if(k.endsWith(`::${tid}`))delete b.cells[k]});return b})
   const rnt=(tid,l)=>cm(b=>{const t=b.targets.find(x=>x.id===tid);if(t)t.label=l;return b})
@@ -52,11 +89,11 @@ export default function App(){
   const srn=(rid,n)=>cm(b=>{const r=b.rows.find(x=>x.id===rid);if(r)r.name=n;return b})
   const cd=()=>cm(b=>{b.cells={};return b})
   const ep=(i,v)=>{const n=[...pool];n[i]=v;setPool(n)}
-  const cp=()=>{const nx=pool.filter(x=>x.trim()!=='');setPool(nx);sset('pool',nx)}
+  const cp=()=>{const nx=pool.filter(x=>x.trim()!=='');setPool(nx);sset(pk(branch),nx)}
   const pAdd=()=>setPool(p=>[...p,''])
-  const pDel=i=>{const n=pool.filter((_,x)=>x!==i);setPool(n);sset('pool',n)}
-  async function csf(sd){if(!sd)return;const src=await sget(kf(sd));if(!src)return;await cm(b=>{b.targets=src.targets.map(t=>({...t}));b.rows=src.rows.map(r=>({...r}));b.cells={};return b})}
-  function tu(){if(code===AC){setAdmin(true);setCodeOpen(false);setCode('');setCodeErr(false)}else setCodeErr(true)}
+  const pDel=i=>{const n=pool.filter((_,x)=>x!==i);setPool(n);sset(pk(branch),n)}
+  async function csf(sd){if(!sd)return;const src=await sget(kf(branch,sd));if(!src)return;await cm(b=>{b.targets=src.targets.map(t=>({...t}));b.rows=src.rows.map(r=>({...r}));b.cells={};return b})}
+  function tu(){if(meta&&code===meta.code){setAdmin(true);setCodeOpen(false);setCode('');setCodeErr(false)}else setCodeErr(true)}
 
   const st=board?(()=>{const tot=board.rows.length*board.targets.length;const dn=Object.keys(board.cells).length;const fl=board.rows.filter(r=>board.targets.length>0&&board.targets.every(t=>board.cells[`${r.id}::${t.id}`])).length;return{tot,dn,fl,pct:tot?Math.round((dn/tot)*100):0}})():null
   const df=`'Frank Ruhl Libre','Heebo',Georgia,serif`;const ff=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
@@ -76,6 +113,9 @@ export default function App(){
     copySummary();try{window.open('https://wa.me/?text='+encodeURIComponent(sumText),'_blank')}catch(e){}}
   async function shot(){if(!board)return;setCapturing(true);await new Promise(r=>setTimeout(r,180));try{const el=capRef.current;if(!el)throw new Error('render');const canvas=await html2canvas(el,{backgroundColor:'#0E1B2E',scale:2,useCORS:true});canvas.toBlob(async blob=>{if(!blob)return;const file=new File([blob],`bingo-${date}.png`,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:`לוח יעדים ${date}`});return}catch(e){if(e.name==='AbortError')return}}const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`bingo-${date}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)},'image/png')}catch(e){alert('שגיאה בצילום המסך: '+e.message)}finally{setCapturing(false)}}
 
+  if(!branch)return<Landing C={C} df={df} ff={ff}/>
+  if(meta===undefined)return<div style={{minHeight:'100vh',background:C.bg,color:C.sub,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:ff,fontSize:15}}>{'\u05d8\u05d5\u05e2\u05df\u2026'}</div>
+  if(meta===null)return<NotFound C={C} df={df} ff={ff} branch={branch}/>
   return(
     /* ── overflowX:hidden מונע גלילה אופקית של הדף כולו ── */
     <div dir="rtl" style={{minHeight:'100vh',background:C.bg,fontFamily:ff,color:C.white,overflowX:'hidden'}}>
@@ -83,7 +123,7 @@ export default function App(){
         <header style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:16,flexWrap:'wrap'}}>
           <div>
             <h1 style={{fontFamily:df,fontWeight:800,fontSize:28,lineHeight:1.1,color:C.white,margin:0}}>{'\u05dc\u05d5\u05d7 \u05d4\u05d9\u05e2\u05d3\u05d9\u05dd'}</h1>
-            <div style={{color:C.gold,fontSize:13,fontWeight:600,marginTop:3}}>{'\u05e1\u05e0\u05d9\u05e3 \u05d4\u05de\u05e4\u05e8\u05e5 \u00b7 \u05d1\u05d9\u05e0\u05d2\u05d5 \u05d9\u05e2\u05d3\u05d9\u05dd \u05d9\u05d5\u05de\u05d9'}</div>
+            <div style={{color:C.gold,fontSize:13,fontWeight:600,marginTop:3}}>{`${meta.name} \u00b7 \u05d1\u05d9\u05e0\u05d2\u05d5 \u05d9\u05e2\u05d3\u05d9\u05dd \u05d9\u05d5\u05de\u05d9`}</div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
           <button onClick={()=>setHelpOpen(true)} title="הוראות שימוש" style={{display:'flex',alignItems:'center',gap:6,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'10px 13px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>
