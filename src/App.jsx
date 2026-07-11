@@ -228,7 +228,10 @@ export default function App(){
   const schMode=m=>{if(date<ts()&&!admin)return;cm(b=>{const sc={mode:'60',extra:0,assign:{},...(b.schedule||{})};sc.mode=m;sc.extra=0;b.schedule=sc;return b})}
   const schAssign=(i,rid)=>{if(date<ts()&&!admin)return;cm(b=>{const sc={mode:'60',extra:0,assign:{},...(b.schedule||{})};sc.assign={...sc.assign,[i]:rid};b.schedule=sc;return b})}
   const schAdd=()=>{if(date<ts()&&!admin)return;cm(b=>{const sc={mode:'60',extra:0,assign:{},...(b.schedule||{})};sc.extra=(sc.extra||0)+1;b.schedule=sc;return b})}
-  const schRemove=i=>{if(date<ts()&&!admin)return;cm(b=>{const sc={mode:'60',extra:0,assign:{},...(b.schedule||{})};sc.extra=Math.max(0,(sc.extra||0)-1);const a={...sc.assign};delete a[i];sc.assign=a;b.schedule=sc;return b})}
+  const schRemove=i=>{if(date<ts()&&!admin)return;cm(b=>{const sc={mode:'60',extra:0,assign:{},...(b.schedule||{})};sc.extra=Math.max(0,(sc.extra||0)-1);const a={...sc.assign};delete a[i];sc.assign=a;const tm={...(sc.times||{})};delete tm[i];sc.times=tm;b.schedule=sc;return b})}
+  function schTimeChange(i,val){if(date<ts()&&!admin)return;setBoard(b=>{const sc={mode:'60',extra:0,assign:{},times:{},...(b.schedule||{})};sc.times={...(sc.times||{}),[i]:val};return{...b,schedule:sc}})}
+  function schTimeSave(i){if(date<ts()&&!admin)return;setBoard(b=>{if(!b)return b;let nb=b;const sc={...(b.schedule||{})};const tm={...(sc.times||{})};if(i!=null&&!String(tm[i]??'').trim()){delete tm[i];sc.times=tm;nb={...b,schedule:sc}}skr.current=true;sset(kf(branch,date),nb).then(ok=>{setSaveErr(!ok);setTimeout(()=>{skr.current=false},800)});return nb})}
+  const schReset=()=>{if(date<ts()&&!admin)return;cm(b=>{const sc={mode:'60',extra:0,assign:{},...(b.schedule||{})};sc.times={};sc.extra=0;b.schedule=sc;return b})}
   function tu(){if(meta&&code===meta.code){setAdmin(true);setCodeOpen(false);setCode('');setCodeErr(false)}else setCodeErr(true)}
   function doReset(){const ansOk=meta.a&&recAns.trim()&&recAns.trim().toLowerCase()===String(meta.a).trim().toLowerCase();const codeOk=recCode&&(recCode===meta.rec||recCode===MASTER);if(!(ansOk||codeOk)){setRecErr('תשובה או קוד שחזור שגויים');return}if(recNew.length<3){setRecErr('קוד חדש — לפחות 3 תווים');return}sset(mk(branch),{...meta,code:recNew}).then(ok=>{if(!ok){setRecErr('שגיאת שמירה');return}setMeta(m=>({...m,code:recNew}));setAdmin(true);setCodeOpen(false);setRecMode(false);setCode('');setRecAns('');setRecCode('');setRecNew('');setRecErr('')})}
 
@@ -265,12 +268,18 @@ export default function App(){
     /* ── overflowX:hidden מונע גלילה אופקית של הדף כולו ── */
     <div dir="rtl" style={{minHeight:'100vh',background:C.bg,fontFamily:ff,color:C.white,overflowX:'hidden'}}>
       <div style={{maxWidth:1060,margin:'0 auto',padding:'18px 12px 48px'}}>
-        <header style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:16,flexWrap:'wrap'}}>
+        <header style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,marginBottom:10,flexWrap:'wrap'}}>
           <div>
             <h1 style={{fontFamily:df,fontWeight:800,fontSize:28,lineHeight:1.1,color:C.white,margin:0}}>{'\u05dc\u05d5\u05d7 \u05d4\u05d9\u05e2\u05d3\u05d9\u05dd'}</h1>
             <div style={{color:C.gold,fontSize:13,fontWeight:600,marginTop:3}}>{`${meta.name} \u00b7 \u05d1\u05d9\u05e0\u05d2\u05d5 \u05d9\u05e2\u05d3\u05d9\u05dd \u05d9\u05d5\u05de\u05d9`}</div>
           </div>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'flex-end',gap:8,flexWrap:'wrap'}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:'8px 13px',flexShrink:0}}>
+            <span>{'\ud83d\udcc5'}</span>
+            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{background:'transparent',color:C.white,border:'none',outline:'none',fontFamily:ff,fontSize:14,fontWeight:600,cursor:'pointer'}}/>
+          </div>
+        </header>
+
+        <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:14}}>
           {!admin&&<button onClick={()=>setHelpOpen(true)} title="הוראות שימוש" style={{display:'flex',alignItems:'center',gap:6,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'10px 13px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>
             <span>{'\u2139\ufe0f'}</span><span>{'\u05d4\u05d5\u05e8\u05d0\u05d5\u05ea'}</span>
           </button>}
@@ -283,8 +292,8 @@ export default function App(){
           {admin&&<button onClick={()=>{setAdmin(false);setShowPanel(false)}} title="\u05d9\u05e6\u05d9\u05d0\u05d4 \u05de\u05de\u05e6\u05d1 \u05d0\u05d3\u05de\u05d9\u05df" style={{display:'flex',alignItems:'center',gap:6,background:'transparent',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:'10px 13px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>
             <span>{'\ud83d\udd13'}</span><span>{'\u05d9\u05e6\u05d9\u05d0\u05d4'}</span>
           </button>}
-          </div>
-        </header>
+          {saveErr&&<div style={{background:'#3A1A1A',border:'1px solid #7A3A34',color:'#F0C4BE',borderRadius:10,padding:'8px 12px',fontSize:12}}>{'שגיאת שמירה ⚠️'}</div>}
+        </div>
 
         <div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:14}}>
           <button onClick={()=>setTab('board')} style={{flex:'1 1 auto',minWidth:104,background:tab==='board'?C.gold:C.panel,color:tab==='board'?C.panel2:C.goldSoft,border:`1px solid ${tab==='board'?C.gold:C.line}`,borderRadius:12,padding:'11px 8px',fontWeight:800,fontSize:13.5,cursor:'pointer',fontFamily:ff}}>{'🎯 לוח יעדים'}</button>
@@ -292,25 +301,14 @@ export default function App(){
           <button onClick={()=>setTab('sched')} style={{flex:'1 1 auto',minWidth:104,background:tab==='sched'?C.gold:C.panel,color:tab==='sched'?C.panel2:C.goldSoft,border:`1px solid ${tab==='sched'?C.gold:C.line}`,borderRadius:12,padding:'11px 8px',fontWeight:800,fontSize:13.5,cursor:'pointer',fontFamily:ff}}>{'🪑 עמדה סגורה'}</button>
         </div>
 
-        <div style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:8,marginBottom:16}}>
-          <div style={{display:'flex',alignItems:'center',gap:8,background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:'8px 13px'}}>
-            <span>{'\ud83d\udcc5'}</span>
-            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{background:'transparent',color:C.white,border:'none',outline:'none',fontFamily:ff,fontSize:14,fontWeight:600,cursor:'pointer'}}/>
-          </div>
-          <div style={{background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:'8px 13px',fontSize:13,color:C.sub}}>{wd(date)}{date===ts()&&<span style={{color:C.gold,fontWeight:700}}>{' \u00b7 \u05d4\u05d9\u05d5\u05dd'}</span>}</div>
-          {st&&tab==='board'&&(<div style={{display:'flex',alignItems:'center',gap:8,background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:'8px 13px'}}>
-            <div style={{width:80,height:8,background:C.panel2,borderRadius:99,overflow:'hidden'}}><div style={{width:`${st.pct}%`,height:'100%',background:C.done,transition:'width .4s'}}/></div>
-            <span style={{fontSize:13,fontWeight:700}}>{st.dn}/{st.tot}</span>
-            {st.fl>0&&<span style={{fontSize:13,color:C.gold,fontWeight:700}}>{`\u00b7 ${st.fl} \u05d1\u05d9\u05e0\u05d2\u05d5 \ud83c\udf89`}</span>}
-          </div>)}
-          {saveErr&&<div style={{background:'#3A1A1A',border:'1px solid #7A3A34',color:'#F0C4BE',borderRadius:10,padding:'8px 12px',fontSize:12}}>{'שגיאת שמירה ⚠️'}</div>}
-        </div>
+
+
 
         {board&&!loading&&past&&<div style={{background:locked?C.panel:'#2A2113',border:`1px solid ${locked?C.line:C.gold}`,color:locked?C.sub:C.gold,borderRadius:12,padding:'10px 14px',marginBottom:12,fontSize:13,fontWeight:600,textAlign:'center'}}>{locked?'🔒 יום עבר · לצפייה בלבד. להזזת סימונים היכנס לאדמין.':'✏️ מצב אדמין · עריכת יום עבר מאופשרת.'}</div>}
 
         {loading?<div style={{textAlign:'center',padding:60,color:C.sub}}>{'טוען…'}</div>:!board?
           <div style={{background:C.board,borderRadius:18,color:C.ink,padding:48,textAlign:'center'}}><div style={{fontSize:44,marginBottom:10}}>{'🗓️'}</div><div style={{fontWeight:700,fontSize:17}}>{'אין לוח לתאריך זה'}</div><div style={{color:C.sub,fontSize:14,marginTop:6}}>{'תאריך עבר שלא הוגדר בו לוח.'}</div></div>:
-          <div ref={boardRef}>{tab==='board'?<Bo board={board} admin={admin} locked={locked} pool={pool} celebrate={celebrate} onToggle={tc} onRenameTarget={rnt} onRemoveTarget={rt} onRemoveRow={rr} onSetRowName={srn} onAddTarget={at} onAddRow={ar}/>:tab==='report'?<Rep C={C} board={board} locked={locked} onChange={repChange} onSave={repSave}/>:<Sched C={C} board={board} locked={locked} onMode={schMode} onAssign={schAssign} onAddSlot={schAdd} onRemoveSlot={schRemove}/>}</div>
+          <div ref={boardRef}>{tab==='board'?<Bo board={board} admin={admin} locked={locked} pool={pool} celebrate={celebrate} onToggle={tc} onRenameTarget={rnt} onRemoveTarget={rt} onRemoveRow={rr} onSetRowName={srn} onAddTarget={at} onAddRow={ar}/>:tab==='report'?<Rep C={C} board={board} locked={locked} onChange={repChange} onSave={repSave}/>:<Sched C={C} board={board} locked={locked} onMode={schMode} onAssign={schAssign} onAddSlot={schAdd} onRemoveSlot={schRemove} onTimeChange={schTimeChange} onTimeSave={schTimeSave} onReset={schReset}/>}</div>
         }
 
         {tab==='board'&&<div style={{display:'flex',justifyContent:'center',gap:20,marginTop:18,color:C.sub,fontSize:12}}>
@@ -518,25 +516,28 @@ function Cap({C,board}){
 }
 
 /* ══ CLOSED-POSITION SCHEDULE ══ */
-function Sched({C,board,locked,onMode,onAssign,onAddSlot,onRemoveSlot}){
+function Sched({C,board,locked,onMode,onAssign,onAddSlot,onRemoveSlot,onTimeChange,onTimeSave,onReset}){
   const f=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
-  const sc=board.schedule||{mode:'60',extra:0,assign:{}}
+  const sc=board.schedule||{mode:'60',extra:0,assign:{},times:{}}
   const mode=sc.mode||'60'
   const slots=schedSlots(mode,sc.extra||0)
   const rows=board.rows||[]
+  const times=sc.times||{}
   const pill=on=>({flex:1,background:on?C.gold:C.panel,color:on?C.panel2:C.goldSoft,border:`1px solid ${on?C.gold:C.line}`,borderRadius:12,padding:'11px',fontWeight:800,fontSize:14,cursor:locked?'default':'pointer',fontFamily:f,opacity:locked?.6:1})
   return(
     <div style={{background:C.board,borderRadius:20,padding:14,boxShadow:'0 12px 36px rgba(0,0,0,.4)'}}>
       <div style={{display:'flex',gap:8,marginBottom:14}}>
         <button disabled={locked} onClick={()=>onMode('60')} style={pill(mode==='60')}>{'שעה'}</button>
         <button disabled={locked} onClick={()=>onMode('90')} style={pill(mode==='90')}>{'שעה וחצי'}</button>
+        {!locked&&<button onClick={onReset} title="איפוס שעות לברירת מחדל" aria-label="איפוס שעות" style={{flexShrink:0,width:46,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,fontSize:19,fontWeight:700,cursor:'pointer',fontFamily:f}}>{'↺'}</button>}
       </div>
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
         {slots.map(sl=>{
           const val=sc.assign?.[sl.i]||''
+          const tv=times[sl.i]??sl.label
           const isLastExtra=sl.i===slots.length-1&&sl.i>=schedBase(mode)
           return(<div key={sl.i} style={{display:'flex',alignItems:'center',gap:8}}>
-            <div style={{flexShrink:0,minWidth:118,background:'#FBFAF3',border:`1px solid ${C.boardLine}`,borderRadius:12,padding:'13px 8px',textAlign:'center',fontFamily:f,fontWeight:800,fontSize:15,color:C.ink,direction:'ltr'}}>{sl.label}</div>
+            <input disabled={locked} value={tv} onChange={e=>onTimeChange(sl.i,e.target.value)} onBlur={()=>onTimeSave(sl.i)} dir="ltr" aria-label="שעות הסלוט" style={{flexShrink:0,width:120,background:locked?'#EFEDE4':'#FBFAF3',border:`1px solid ${C.boardLine}`,borderRadius:12,padding:'13px 4px',textAlign:'center',fontFamily:f,fontWeight:800,fontSize:15,color:C.ink,outline:'none'}}/>
             <select disabled={locked} value={val} onChange={e=>onAssign(sl.i,e.target.value)} style={{flex:1,minWidth:0,background:locked?'#EFEDE4':(val?'#FBF3D9':'#fff'),border:`1.5px solid ${val?C.gold:C.boardLine}`,borderRadius:12,padding:'13px 10px',fontFamily:f,fontSize:15,fontWeight:700,color:C.ink,outline:'none',direction:'rtl',cursor:locked?'default':'pointer'}}>
               <option value="">{'— בחר בנקאי —'}</option>
               {rows.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
@@ -546,7 +547,7 @@ function Sched({C,board,locked,onMode,onAssign,onAddSlot,onRemoveSlot}){
         })}
       </div>
       {mode==='90'&&!locked&&<button onClick={onAddSlot} style={{width:'100%',marginTop:10,display:'flex',alignItems:'center',justifyContent:'center',gap:6,background:'transparent',color:'#8A6B22',border:`1.5px dashed ${C.gold}`,borderRadius:12,padding:'12px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:f}}>{'＋ הוסף סלוט'}</button>}
-      <div style={{color:C.ink,opacity:.6,fontSize:12,marginTop:14,textAlign:'center',fontFamily:f}}>{locked?'🔒 יום עבר · לצפייה בלבד.':'שבצו לכל סלוט את הבנקאי שיושב בעמדה הסגורה · נשמר אוטומטית.'}</div>
+      <div style={{color:C.ink,opacity:.6,fontSize:12,marginTop:14,textAlign:'center',fontFamily:f}}>{locked?'🔒 יום עבר · לצפייה בלבד.':'שבצו בנקאי לכל סלוט · ניתן לערוך את השעות ידנית (↺ לאיפוס) · נשמר אוטומטית.'}</div>
     </div>
   )
 }
@@ -558,11 +559,12 @@ function CapSched({C,board}){
   const mode=sc.mode||'60'
   const slots=schedSlots(mode,sc.extra||0)
   const nameOf=id=>{const r=(board.rows||[]).find(x=>x.id===id);return r?r.name:''}
+  const times=sc.times||{}
   return(
     <div style={{background:C.board,borderRadius:20,padding:14,boxShadow:'0 12px 36px rgba(0,0,0,.4)',width:360}}>
-      {slots.map(sl=>{const nm=nameOf(sc.assign?.[sl.i]);return(
+      {slots.map(sl=>{const nm=nameOf(sc.assign?.[sl.i]);const tv=times[sl.i]??sl.label;return(
         <div key={sl.i} style={{display:'flex',alignItems:'stretch',gap:8,marginBottom:8}}>
-          <div style={{flexShrink:0,width:126,background:'#FBFAF3',border:`1px solid ${C.boardLine}`,borderRadius:12,padding:'14px 8px',textAlign:'center',fontFamily:f,fontWeight:800,fontSize:16,color:C.ink,direction:'ltr'}}>{sl.label}</div>
+          <div style={{flexShrink:0,width:126,background:'#FBFAF3',border:`1px solid ${C.boardLine}`,borderRadius:12,padding:'14px 8px',textAlign:'center',fontFamily:f,fontWeight:800,fontSize:16,color:C.ink,direction:'ltr'}}>{tv}</div>
           <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',background:nm?'#FBF3D9':'#fff',border:`1.5px solid ${nm?C.gold:C.boardLine}`,borderRadius:12,padding:'14px 12px',fontFamily:f,fontWeight:800,fontSize:16,color:nm?C.ink:C.sub,textAlign:'center'}}>{nm||'—'}</div>
         </div>)})}
     </div>
