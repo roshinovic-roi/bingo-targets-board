@@ -257,10 +257,10 @@ export default function App(){
             <h1 style={{fontFamily:df,fontWeight:800,fontSize:28,lineHeight:1.1,color:C.white,margin:0}}>{'\u05dc\u05d5\u05d7 \u05d4\u05d9\u05e2\u05d3\u05d9\u05dd'}</h1>
             <div style={{color:C.gold,fontSize:13,fontWeight:600,marginTop:3}}>{`${meta.name} \u00b7 \u05d1\u05d9\u05e0\u05d2\u05d5 \u05d9\u05e2\u05d3\u05d9\u05dd \u05d9\u05d5\u05de\u05d9`}</div>
           </div>
-          <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
-          <button onClick={()=>setHelpOpen(true)} title="הוראות שימוש" style={{display:'flex',alignItems:'center',gap:6,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'10px 13px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'flex-end',gap:8,flexWrap:'wrap'}}>
+          {!admin&&<button onClick={()=>setHelpOpen(true)} title="הוראות שימוש" style={{display:'flex',alignItems:'center',gap:6,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'10px 13px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>
             <span>{'\u2139\ufe0f'}</span><span>{'\u05d4\u05d5\u05e8\u05d0\u05d5\u05ea'}</span>
-          </button>
+          </button>}
           <button onClick={shareLink} title="שלח קישור לבנקאים בוואטסאפ" style={{display:'flex',alignItems:'center',gap:6,background:C.panel,color:'#7FCF9A',border:'1px solid #2E5E43',borderRadius:12,padding:'10px 13px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>
             <span>{'📲'}</span><span>{'קישור לצוות'}</span>
           </button>
