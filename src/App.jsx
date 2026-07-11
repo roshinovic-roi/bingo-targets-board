@@ -31,7 +31,7 @@ function Landing({C,df,ff}){
   const[mode,setMode]=useState('home')
   const[num,setNum]=useState('');const[name,setName]=useState('');const[code,setCode]=useState('')
   const[q,setQ]=useState('');const[a,setA]=useState('')
-  const[err,setErr]=useState('');const[busy,setBusy]=useState(false);const[created,setCreated]=useState(null);const[help,setHelp]=useState(false)
+  const[err,setErr]=useState('');const[busy,setBusy]=useState(false);const[created,setCreated]=useState(null);const[help,setHelp]=useState(false);const[vid,setVid]=useState(false)
   const wrap={minHeight:'100vh',background:C.bg,color:C.white,fontFamily:ff,display:'flex',alignItems:'center',justifyContent:'center',padding:20}
   const card={width:'100%',maxWidth:440,background:C.panel,border:`1px solid ${C.line}`,borderRadius:20,padding:24,boxSizing:'border-box'}
   const inp={width:'100%',boxSizing:'border-box',background:C.panel2,color:C.white,border:`1px solid ${C.line}`,borderRadius:12,padding:'13px 14px',fontFamily:ff,fontSize:15,outline:'none',marginTop:10,direction:'rtl'}
@@ -52,6 +52,7 @@ function Landing({C,df,ff}){
   </div></div>)
   return(<div style={wrap}><div style={card}>{title}
     {mode==='home'&&<><button style={btn(true)} onClick={()=>{setErr('');setMode('create')}}>{'➕ צור סניף חדש'}</button><button style={btn(false)} onClick={()=>{setErr('');setMode('enter')}}>{'🔑 כניסה לסניף קיים'}</button>
+      <button onClick={()=>setVid(true)} style={{width:'100%',boxSizing:'border-box',background:C.panel2,color:C.goldSoft,border:`1px solid ${C.gold}`,borderRadius:12,padding:12,fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:ff,marginTop:12,display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>{'🎬 צפו בסרטון הדרכה'}</button>
       <div onClick={()=>setHelp(true)} style={{color:C.goldSoft,fontSize:13,textAlign:'center',marginTop:16,cursor:'pointer',textDecoration:'underline'}}>{'ℹ️ איך זה עובד?'}</div>
       {help&&<div onClick={()=>setHelp(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',display:'flex',alignItems:'flex-start',justifyContent:'center',padding:20,overflowY:'auto',zIndex:50}}>
         <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:440,background:C.panel,border:`1px solid ${C.line}`,borderRadius:20,padding:22,margin:'24px 0',boxSizing:'border-box',direction:'rtl',textAlign:'right'}}>
@@ -73,6 +74,16 @@ function Landing({C,df,ff}){
             <div>{'• שכחתם קוד? "שכחתי את הקוד" במסך הכניסה — שחזור דרך שאלה או קוד שחזור.'}</div>
           </div>
           <button onClick={()=>setHelp(false)} style={{width:'100%',marginTop:18,background:C.gold,color:C.panel2,border:'none',borderRadius:12,padding:12,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'הבנתי'}</button>
+        </div>
+      </div>}
+      {vid&&<div onClick={()=>setVid(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.88)',display:'flex',alignItems:'center',justifyContent:'center',padding:16,zIndex:60}}>
+        <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:440,display:'flex',flexDirection:'column',alignItems:'center'}}>
+          <div style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+            <div style={{fontFamily:df,fontWeight:800,fontSize:17}}>{'🎬 סרטון הדרכה'}</div>
+            <div onClick={()=>setVid(false)} style={{cursor:'pointer',color:C.goldSoft,fontSize:24,lineHeight:1,padding:'0 8px'}}>{'✕'}</div>
+          </div>
+          <video src="/tutorial.mp4" controls playsInline autoPlay style={{width:'100%',maxHeight:'76vh',borderRadius:14,background:'#000',border:`1px solid ${C.line}`}}/>
+          <button onClick={()=>setVid(false)} style={{...btn(false),marginTop:14}}>{'סגור'}</button>
         </div>
       </div>}
     </>}
