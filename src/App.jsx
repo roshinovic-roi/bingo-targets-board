@@ -24,6 +24,7 @@ const schedDur=m=>m==='90'?90:60
 const schedBase=m=>m==='90'?4:6
 const fmtMin=m=>`${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}`
 const schedSlots=(mode,extra)=>{const d=schedDur(mode);const n=schedBase(mode)+(extra||0);return Array.from({length:n},(_,i)=>{const s=SCHED_START+i*d;return{i,label:`${fmtMin(s)}-${fmtMin(s+d)}`}})}
+const schBucket=(sc,mode)=>({assign:(sc&&sc.assign&&sc.assign[mode])||{},times:(sc&&sc.times&&sc.times[mode])||{},extra:(sc&&sc.extra&&sc.extra[mode])||0})
 
 function EL({value,onSave,disabled,style}){
   const[ed,setEd]=useState(false);const[dr,setDr]=useState(value);const r=useRef()
@@ -225,13 +226,13 @@ export default function App(){
   const pAdd=()=>setPool(p=>[...p,''])
   const pDel=i=>{const n=pool.filter((_,x)=>x!==i);setPool(n);sset(pk(branch),n)}
   async function csf(sd){if(!sd)return;const src=await sget(kf(branch,sd));if(!src)return;await cm(b=>{b.targets=src.targets.map(t=>({...t}));b.rows=src.rows.map(r=>({...r}));b.cells={};return b})}
-  const schMode=m=>{if(date<ts()&&!admin)return;cm(b=>{const sc={mode:'60',extra:0,assign:{},...(b.schedule||{})};sc.mode=m;sc.extra=0;b.schedule=sc;return b})}
-  const schAssign=(i,rid)=>{if(date<ts()&&!admin)return;cm(b=>{const sc={mode:'60',extra:0,assign:{},...(b.schedule||{})};sc.assign={...sc.assign,[i]:rid};b.schedule=sc;return b})}
-  const schAdd=()=>{if(date<ts()&&!admin)return;cm(b=>{const sc={mode:'60',extra:0,assign:{},...(b.schedule||{})};sc.extra=(sc.extra||0)+1;b.schedule=sc;return b})}
-  const schRemove=i=>{if(date<ts()&&!admin)return;cm(b=>{const sc={mode:'60',extra:0,assign:{},...(b.schedule||{})};sc.extra=Math.max(0,(sc.extra||0)-1);const a={...sc.assign};delete a[i];sc.assign=a;const tm={...(sc.times||{})};delete tm[i];sc.times=tm;b.schedule=sc;return b})}
-  function schTimeChange(i,val){if(date<ts()&&!admin)return;setBoard(b=>{const sc={mode:'60',extra:0,assign:{},times:{},...(b.schedule||{})};sc.times={...(sc.times||{}),[i]:val};return{...b,schedule:sc}})}
-  function schTimeSave(i){if(date<ts()&&!admin)return;setBoard(b=>{if(!b)return b;let nb=b;const sc={...(b.schedule||{})};const tm={...(sc.times||{})};if(i!=null&&!String(tm[i]??'').trim()){delete tm[i];sc.times=tm;nb={...b,schedule:sc}}skr.current=true;sset(kf(branch,date),nb).then(ok=>{setSaveErr(!ok);setTimeout(()=>{skr.current=false},800)});return nb})}
-  const schReset=()=>{if(date<ts()&&!admin)return;cm(b=>{const sc={mode:'60',extra:0,assign:{},...(b.schedule||{})};sc.times={};sc.extra=0;b.schedule=sc;return b})}
+  const schMode=m=>{if(date<ts()&&!admin)return;cm(b=>{const sc=b.schedule||{};b.schedule={...sc,mode:m};return b})}
+  const schAssign=(i,rid)=>{if(date<ts()&&!admin)return;cm(b=>{const sc=b.schedule||{};const mode=sc.mode||'60';const assign={...(sc.assign||{})};const m={...(assign[mode]||{})};m[i]=rid;assign[mode]=m;b.schedule={...sc,mode,assign};return b})}
+  const schAdd=()=>{if(date<ts()&&!admin)return;cm(b=>{const sc=b.schedule||{};const mode=sc.mode||'60';const extra={...(sc.extra||{})};extra[mode]=(extra[mode]||0)+1;b.schedule={...sc,mode,extra};return b})}
+  const schRemove=i=>{if(date<ts()&&!admin)return;cm(b=>{const sc=b.schedule||{};const mode=sc.mode||'60';const extra={...(sc.extra||{})};extra[mode]=Math.max(0,(extra[mode]||0)-1);const assign={...(sc.assign||{})};const am={...(assign[mode]||{})};delete am[i];assign[mode]=am;const times={...(sc.times||{})};const tm={...(times[mode]||{})};delete tm[i];times[mode]=tm;b.schedule={...sc,mode,extra,assign,times};return b})}
+  function schTimeChange(i,val){if(date<ts()&&!admin)return;setBoard(b=>{const sc=b.schedule||{};const mode=sc.mode||'60';const times={...(sc.times||{})};const tm={...(times[mode]||{})};tm[i]=val;times[mode]=tm;return{...b,schedule:{...sc,mode,times}}})}
+  function schTimeSave(i){if(date<ts()&&!admin)return;setBoard(b=>{if(!b)return b;let nb=b;const sc=b.schedule||{};const mode=sc.mode||'60';if(i!=null){const times={...(sc.times||{})};const tm={...(times[mode]||{})};if(!String(tm[i]??'').trim()){delete tm[i];times[mode]=tm;nb={...b,schedule:{...sc,mode,times}}}}skr.current=true;sset(kf(branch,date),nb).then(ok=>{setSaveErr(!ok);setTimeout(()=>{skr.current=false},800)});return nb})}
+  const schReset=()=>{if(date<ts()&&!admin)return;cm(b=>{const sc=b.schedule||{};const mode=sc.mode||'60';const assign={...(sc.assign||{})};assign[mode]={};const times={...(sc.times||{})};times[mode]={};const extra={...(sc.extra||{})};extra[mode]=0;b.schedule={...sc,mode,assign,times,extra};return b})}
   function tu(){if(meta&&code===meta.code){setAdmin(true);setCodeOpen(false);setCode('');setCodeErr(false)}else setCodeErr(true)}
   function doReset(){const ansOk=meta.a&&recAns.trim()&&recAns.trim().toLowerCase()===String(meta.a).trim().toLowerCase();const codeOk=recCode&&(recCode===meta.rec||recCode===MASTER);if(!(ansOk||codeOk)){setRecErr('תשובה או קוד שחזור שגויים');return}if(recNew.length<3){setRecErr('קוד חדש — לפחות 3 תווים');return}sset(mk(branch),{...meta,code:recNew}).then(ok=>{if(!ok){setRecErr('שגיאת שמירה');return}setMeta(m=>({...m,code:recNew}));setAdmin(true);setCodeOpen(false);setRecMode(false);setCode('');setRecAns('');setRecCode('');setRecNew('');setRecErr('')})}
 
@@ -518,11 +519,13 @@ function Cap({C,board}){
 /* ══ CLOSED-POSITION SCHEDULE ══ */
 function Sched({C,board,locked,onMode,onAssign,onAddSlot,onRemoveSlot,onTimeChange,onTimeSave,onReset}){
   const f=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
-  const sc=board.schedule||{mode:'60',extra:0,assign:{},times:{}}
+  const sc=board.schedule||{}
   const mode=sc.mode||'60'
-  const slots=schedSlots(mode,sc.extra||0)
+  const bk=schBucket(sc,mode)
+  const slots=schedSlots(mode,bk.extra)
   const rows=board.rows||[]
-  const times=sc.times||{}
+  const assign=bk.assign
+  const times=bk.times
   const pill=on=>({flex:1,background:on?C.gold:C.panel,color:on?C.panel2:C.goldSoft,border:`1px solid ${on?C.gold:C.line}`,borderRadius:12,padding:'11px',fontWeight:800,fontSize:14,cursor:locked?'default':'pointer',fontFamily:f,opacity:locked?.6:1})
   return(
     <div style={{background:C.board,borderRadius:20,padding:14,boxShadow:'0 12px 36px rgba(0,0,0,.4)'}}>
@@ -533,7 +536,7 @@ function Sched({C,board,locked,onMode,onAssign,onAddSlot,onRemoveSlot,onTimeChan
       </div>
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
         {slots.map(sl=>{
-          const val=sc.assign?.[sl.i]||''
+          const val=assign[sl.i]||''
           const tv=times[sl.i]??sl.label
           const isLastExtra=sl.i===slots.length-1&&sl.i>=schedBase(mode)
           return(<div key={sl.i} style={{display:'flex',alignItems:'center',gap:8}}>
@@ -555,14 +558,15 @@ function Sched({C,board,locked,onMode,onAssign,onAddSlot,onRemoveSlot,onTimeChan
 /* ══ SCHEDULE CAPTURE (screenshot layout) ══ */
 function CapSched({C,board}){
   const f=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
-  const sc=board.schedule||{mode:'60',extra:0,assign:{}}
+  const sc=board.schedule||{}
   const mode=sc.mode||'60'
-  const slots=schedSlots(mode,sc.extra||0)
+  const bk=schBucket(sc,mode)
+  const slots=schedSlots(mode,bk.extra)
   const nameOf=id=>{const r=(board.rows||[]).find(x=>x.id===id);return r?r.name:''}
-  const times=sc.times||{}
+  const times=bk.times
   return(
     <div style={{background:C.board,borderRadius:20,padding:14,boxShadow:'0 12px 36px rgba(0,0,0,.4)',width:360}}>
-      {slots.map(sl=>{const nm=nameOf(sc.assign?.[sl.i]);const tv=times[sl.i]??sl.label;return(
+      {slots.map(sl=>{const nm=nameOf(bk.assign[sl.i]);const tv=times[sl.i]??sl.label;return(
         <div key={sl.i} style={{display:'flex',alignItems:'stretch',gap:8,marginBottom:8}}>
           <div style={{flexShrink:0,width:126,background:'#FBFAF3',border:`1px solid ${C.boardLine}`,borderRadius:12,padding:'14px 8px',textAlign:'center',fontFamily:f,fontWeight:800,fontSize:16,color:C.ink,direction:'ltr'}}>{tv}</div>
           <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',background:nm?'#FBF3D9':'#fff',border:`1.5px solid ${nm?C.gold:C.boardLine}`,borderRadius:12,padding:'14px 12px',fontFamily:f,fontWeight:800,fontSize:16,color:nm?C.ink:C.sub,textAlign:'center'}}>{nm||'—'}</div>
