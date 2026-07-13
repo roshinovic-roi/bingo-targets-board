@@ -251,8 +251,9 @@ export default function App(){
   const NOOP=()=>{}
   const[sumOpen,setSumOpen]=useState(false);const[sumText,setSumText]=useState('');const[copied,setCopied]=useState(false);const[tab,setTab]=useState('board')
   const[weekOpen,setWeekOpen]=useState(false);const[weekLoading,setWeekLoading]=useState(false);const[weekData,setWeekData]=useState(null)
-  async function openWeekly(){
-    setWeekOpen(true);setWeekLoading(true);setWeekData(null)
+  const[shotMenu,setShotMenu]=useState(false)
+  const[capW,setCapW]=useState(false);const capWRef=useRef(null);const[capWeekData,setCapWeekData]=useState(null)
+  async function computeWeekly(){
     const days=weekDates(date)
     const boards=await Promise.all(days.map(d=>sget(kf(branch,d)).catch(()=>null)))
     const order=[];const map={}
@@ -260,9 +261,10 @@ export default function App(){
     boards.forEach(b=>{if(!b||!Array.isArray(b.rows))return;const rep=b.reports||{};b.rows.forEach(r=>{const nm=(r.name||'').trim();if(!nm)return;const rr=rep[r.id]||{};const c=parseInt(rr.credit,10)||0;const g=parseInt(rr.recruit,10)||0;if(!(nm in map)){map[nm]={credit:0,recruit:0,days:0};order.push(nm)}map[nm].credit+=c;map[nm].recruit+=g;if(c>0||g>0)map[nm].days+=1})})
     const list=order.map(nm=>({name:nm,...map[nm]}))
     const totals={credit:list.reduce((a,x)=>a+x.credit,0),recruit:list.reduce((a,x)=>a+x.recruit,0)}
-    setWeekData({range:`${dshort(days[0])}\u2013${dshort(days[days.length-1])}`,list,totals})
-    setWeekLoading(false)
+    return {range:`${dshort(days[0])}\u2013${dshort(days[days.length-1])}`,list,totals}
   }
+  async function openWeekly(){setWeekOpen(true);setWeekLoading(true);setWeekData(null);const d=await computeWeekly();setWeekData(d);setWeekLoading(false)}
+  async function weekShot(){const d=await computeWeekly();setCapWeekData(d);setCapW(true);await new Promise(r=>setTimeout(r,200));try{const el=capWRef.current;if(!el)throw new Error('render');const canvas=await html2canvas(el,{backgroundColor:'#0E1B2E',scale:2,useCORS:true});canvas.toBlob(async blob=>{if(!blob)return;const file=new File([blob],`week-${date}.png`,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:`דיווח שבועי ${d.range}`});return}catch(e){if(e.name==='AbortError')return}}const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`week-${date}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)},'image/png')}catch(e){alert('שגיאה בצילום המסך: '+e.message)}finally{setCapW(false)}}
   function buildSummary(){if(!board)return'';const rows=board.rows,tg=board.targets;const tot=rows.length*tg.length;const dn=Object.keys(board.cells).filter(k=>board.cells[k]).length;const pct=tot?Math.round(dn/tot*100):0;const bingo=rows.filter(r=>tg.length>0&&tg.every(t=>board.cells[`${r.id}::${t.id}`]));let s=`🎯 סיכום יום · ${hd(date)}\n\n✅ הושלמו: ${dn}/${tot} (${pct}%)\n`;if(bingo.length)s+=`🎉 בינגו מלא: ${bingo.map(r=>r.name).join(', ')}\n`;s+=`\n👤 לפי בנקאי:\n`;rows.forEach(r=>{const c=tg.filter(t=>board.cells[`${r.id}::${t.id}`]).length;s+=`• ${r.name}: ${c}/${tg.length}${tg.length>0&&c===tg.length?' 🏆':''}\n`});s+=`\n🎯 לפי יעד:\n`;tg.forEach(t=>{const c=rows.filter(r=>board.cells[`${r.id}::${t.id}`]).length;s+=`• ${t.label}: ${c}/${rows.length}\n`});const rep=board.reports||{};const rl=rows.map(r=>{const rr=rep[r.id]||{};const c=parseInt(rr.credit,10)||0;const g=parseInt(rr.recruit,10)||0;const p=[];if(c>0)p.push(`${c} א ₪ אשראי`);if(g>0)p.push(g===1?'גיוס אחד':`${g} גיוסים`);return p.length?`• ${r.name}: ${p.join(' ו־')}`:null}).filter(Boolean);if(rl.length)s+=`\n📊 דיווח ביצועים:\n`+rl.join('\n')+'\n';return s}
   function openSummary(){setSumText(buildSummary());setCopied(false);setSumOpen(true)}
   function copySummary(){try{navigator.clipboard.writeText(sumText);setCopied(true);setTimeout(()=>setCopied(false),1600)}catch(e){setCopied(false)}}
@@ -334,14 +336,29 @@ export default function App(){
         </div>}
 
         {board&&!loading&&<div style={{display:'flex',gap:10,justifyContent:'center',marginTop:16,flexWrap:'wrap'}}>
-          <button onClick={shot} style={{display:'flex',alignItems:'center',gap:8,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'11px 18px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>{'📸 צילום מסך'}</button>
+          <button onClick={()=>setShotMenu(true)} style={{display:'flex',alignItems:'center',gap:8,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'11px 18px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>{'📸 צילום מסך'}</button>
           <button onClick={openSummary} style={{display:'flex',alignItems:'center',gap:8,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'11px 18px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>{'📋 סיכום יום'}</button>
-          <button onClick={schedShot} style={{display:'flex',alignItems:'center',gap:8,background:C.panel,color:C.goldSoft,border:`1px solid ${C.line}`,borderRadius:12,padding:'11px 18px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>{'🪑 לו״ז עמדה סגורה'}</button>
         </div>}
+
+        {shotMenu&&<Ov onClose={()=>setShotMenu(false)}>
+          <div style={{fontFamily:df,fontSize:20,fontWeight:800,marginBottom:4}}>{'📸 מה לצלם?'}</div>
+          <div style={{color:C.sub,fontSize:12,marginBottom:16}}>{'בחר איזה מסך לצלם ולשתף.'}</div>
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            <button onClick={()=>{setShotMenu(false);shot()}} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:C.gold,color:C.panel2,border:'none',borderRadius:12,padding:14,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'🎯 לוח היעדים (היום)'}</button>
+            <button onClick={()=>{setShotMenu(false);weekShot()}} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:'#12243a',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:14,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'📈 דיווח שבועי מצטבר'}</button>
+            <button onClick={()=>{setShotMenu(false);schedShot()}} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:'#12243a',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:14,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'🪑 לו״ז עמדה סגורה'}</button>
+          </div>
+        </Ov>}
 
         {capturing&&board&&<div ref={capRef} aria-hidden style={{position:'absolute',left:-99999,top:0,width:'fit-content',background:'#0E1B2E',padding:22,boxSizing:'border-box'}}>
           <div style={{color:C.gold,fontFamily:df,fontWeight:800,fontSize:23,marginBottom:14,textAlign:'right',direction:'rtl'}}>{`🎯 לוח יעדים · ${hd(date)}`}</div>
           <Cap C={C} board={board}/>
+        </div>}
+
+        {capW&&capWeekData&&<div ref={capWRef} aria-hidden dir="rtl" style={{position:'absolute',left:-99999,top:0,width:'fit-content',background:'#0E1B2E',padding:22,boxSizing:'border-box'}}>
+          <div style={{color:C.gold,fontFamily:df,fontWeight:800,fontSize:23,marginBottom:4,textAlign:'right'}}>{'📈 דיווח שבועי מצטבר'}</div>
+          <div style={{color:C.goldSoft,fontSize:14,marginBottom:14,textAlign:'right'}}>{`${meta.name} · שבוע ${capWeekData.range} · ראשון–חמישי`}</div>
+          <CapWeek C={C} data={capWeekData}/>
         </div>}
 
         {capS&&board&&<div ref={capSRef} aria-hidden dir="rtl" style={{position:'absolute',left:-99999,top:0,width:'fit-content',background:'#0E1B2E',padding:22,boxSizing:'border-box'}}>
@@ -608,6 +625,29 @@ function CapSched({C,board}){
           <div style={{flexShrink:0,width:126,background:'#FBFAF3',border:`1px solid ${C.boardLine}`,borderRadius:12,padding:'14px 8px',textAlign:'center',fontFamily:f,fontWeight:800,fontSize:16,color:C.ink,direction:'ltr'}}>{tv}</div>
           <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',background:nm?'#FBF3D9':'#fff',border:`1.5px solid ${nm?C.gold:C.boardLine}`,borderRadius:12,padding:'14px 12px',fontFamily:f,fontWeight:800,fontSize:16,color:nm?C.ink:C.sub,textAlign:'center'}}>{nm||'—'}</div>
         </div>)})}
+    </div>
+  )
+}
+
+/* ══ WEEKLY REPORT CAPTURE ══ */
+function CapWeek({C,data}){
+  const f=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
+  const cell={padding:'12px 8px',fontFamily:f,fontWeight:800,fontSize:16,textAlign:'center'}
+  return(
+    <div style={{background:C.board,borderRadius:20,padding:14,boxShadow:'0 12px 36px rgba(0,0,0,.4)',width:380}}>
+      <div style={{display:'grid',gridTemplateColumns:'minmax(90px,1fr) 96px 74px',gap:7,alignItems:'center'}}>
+        <div style={{...cell,textAlign:'right',color:C.ink,fontSize:13,paddingBottom:2}}>{'בנקאי'}</div>
+        <div style={{...cell,color:C.ink,fontSize:13,paddingBottom:2}}>{'אשראי (א׳)'}</div>
+        <div style={{...cell,color:C.ink,fontSize:13,paddingBottom:2}}>{'גיוס'}</div>
+        {data.list.map((x,i)=>(<RF key={i}>
+          <div style={{background:'#FBFAF3',border:`1px solid ${C.boardLine}`,borderRadius:10,...cell,textAlign:'right',color:C.ink,fontSize:15,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{x.name}</div>
+          <div style={{background:'#FBFAF3',border:`1px solid ${C.boardLine}`,borderRadius:10,...cell,color:x.credit?'#8A6B22':C.sub}}>{x.credit||0}</div>
+          <div style={{background:'#FBFAF3',border:`1px solid ${C.boardLine}`,borderRadius:10,...cell,color:x.recruit?'#2E7D46':C.sub}}>{x.recruit||0}</div>
+        </RF>))}
+        <div style={{background:C.gold,borderRadius:10,...cell,textAlign:'right',color:C.panel2,fontSize:15}}>{'סה״כ'}</div>
+        <div style={{background:C.gold,borderRadius:10,...cell,color:C.panel2}}>{data.totals.credit}</div>
+        <div style={{background:C.gold,borderRadius:10,...cell,color:C.panel2}}>{data.totals.recruit}</div>
+      </div>
     </div>
   )
 }
