@@ -25,6 +25,9 @@ const schedBase=m=>m==='90'?4:6
 const fmtMin=m=>`${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}`
 const schedSlots=(mode,extra)=>{const d=schedDur(mode);const n=schedBase(mode)+(extra||0);return Array.from({length:n},(_,i)=>{const s=SCHED_START+i*d;return{i,label:`${fmtMin(s)}-${fmtMin(s+d)}`}})}
 const schBucket=(sc,mode)=>({assign:(sc&&sc.assign&&sc.assign[mode])||{},times:(sc&&sc.times&&sc.times[mode])||{},extra:(sc&&sc.extra&&sc.extra[mode])||0})
+const _pad2=n=>String(n).padStart(2,'0')
+const weekDates=d=>{const[y,m,dd]=d.split('-').map(Number);const dt=new Date(Date.UTC(y,m-1,dd));const dow=dt.getUTCDay();const sun=new Date(dt);sun.setUTCDate(dt.getUTCDate()-dow);const out=[];for(let i=0;i<5;i++){const x=new Date(sun);x.setUTCDate(sun.getUTCDate()+i);out.push(`${x.getUTCFullYear()}-${_pad2(x.getUTCMonth()+1)}-${_pad2(x.getUTCDate())}`)}return out}
+const dshort=s=>{const[,m,dd]=s.split('-');return`${+dd}.${+m}`}
 
 function EL({value,onSave,disabled,style}){
   const[ed,setEd]=useState(false);const[dr,setDr]=useState(value);const r=useRef()
@@ -247,6 +250,19 @@ export default function App(){
   const[capS,setCapS]=useState(false)
   const NOOP=()=>{}
   const[sumOpen,setSumOpen]=useState(false);const[sumText,setSumText]=useState('');const[copied,setCopied]=useState(false);const[tab,setTab]=useState('board')
+  const[weekOpen,setWeekOpen]=useState(false);const[weekLoading,setWeekLoading]=useState(false);const[weekData,setWeekData]=useState(null)
+  async function openWeekly(){
+    setWeekOpen(true);setWeekLoading(true);setWeekData(null)
+    const days=weekDates(date)
+    const boards=await Promise.all(days.map(d=>sget(kf(branch,d)).catch(()=>null)))
+    const order=[];const map={}
+    ;(board?.rows||[]).forEach(r=>{const nm=(r.name||'').trim();if(nm&&!(nm in map)){map[nm]={credit:0,recruit:0,days:0};order.push(nm)}})
+    boards.forEach(b=>{if(!b||!Array.isArray(b.rows))return;const rep=b.reports||{};b.rows.forEach(r=>{const nm=(r.name||'').trim();if(!nm)return;const rr=rep[r.id]||{};const c=parseInt(rr.credit,10)||0;const g=parseInt(rr.recruit,10)||0;if(!(nm in map)){map[nm]={credit:0,recruit:0,days:0};order.push(nm)}map[nm].credit+=c;map[nm].recruit+=g;if(c>0||g>0)map[nm].days+=1})})
+    const list=order.map(nm=>({name:nm,...map[nm]}))
+    const totals={credit:list.reduce((a,x)=>a+x.credit,0),recruit:list.reduce((a,x)=>a+x.recruit,0)}
+    setWeekData({range:`${dshort(days[0])}\u2013${dshort(days[days.length-1])}`,list,totals})
+    setWeekLoading(false)
+  }
   function buildSummary(){if(!board)return'';const rows=board.rows,tg=board.targets;const tot=rows.length*tg.length;const dn=Object.keys(board.cells).filter(k=>board.cells[k]).length;const pct=tot?Math.round(dn/tot*100):0;const bingo=rows.filter(r=>tg.length>0&&tg.every(t=>board.cells[`${r.id}::${t.id}`]));let s=`🎯 סיכום יום · ${hd(date)}\n\n✅ הושלמו: ${dn}/${tot} (${pct}%)\n`;if(bingo.length)s+=`🎉 בינגו מלא: ${bingo.map(r=>r.name).join(', ')}\n`;s+=`\n👤 לפי בנקאי:\n`;rows.forEach(r=>{const c=tg.filter(t=>board.cells[`${r.id}::${t.id}`]).length;s+=`• ${r.name}: ${c}/${tg.length}${tg.length>0&&c===tg.length?' 🏆':''}\n`});s+=`\n🎯 לפי יעד:\n`;tg.forEach(t=>{const c=rows.filter(r=>board.cells[`${r.id}::${t.id}`]).length;s+=`• ${t.label}: ${c}/${rows.length}\n`});const rep=board.reports||{};const rl=rows.map(r=>{const rr=rep[r.id]||{};const c=parseInt(rr.credit,10)||0;const g=parseInt(rr.recruit,10)||0;const p=[];if(c>0)p.push(`${c} א ₪ אשראי`);if(g>0)p.push(g===1?'גיוס אחד':`${g} גיוסים`);return p.length?`• ${r.name}: ${p.join(' ו־')}`:null}).filter(Boolean);if(rl.length)s+=`\n📊 דיווח ביצועים:\n`+rl.join('\n')+'\n';return s}
   function openSummary(){setSumText(buildSummary());setCopied(false);setSumOpen(true)}
   function copySummary(){try{navigator.clipboard.writeText(sumText);setCopied(true);setTimeout(()=>setCopied(false),1600)}catch(e){setCopied(false)}}
@@ -309,7 +325,7 @@ export default function App(){
 
         {loading?<div style={{textAlign:'center',padding:60,color:C.sub}}>{'טוען…'}</div>:!board?
           <div style={{background:C.board,borderRadius:18,color:C.ink,padding:48,textAlign:'center'}}><div style={{fontSize:44,marginBottom:10}}>{'🗓️'}</div><div style={{fontWeight:700,fontSize:17}}>{'אין לוח לתאריך זה'}</div><div style={{color:C.sub,fontSize:14,marginTop:6}}>{'תאריך עבר שלא הוגדר בו לוח.'}</div></div>:
-          <div ref={boardRef}>{tab==='board'?<Bo board={board} admin={admin} locked={locked} pool={pool} celebrate={celebrate} onToggle={tc} onRenameTarget={rnt} onRemoveTarget={rt} onRemoveRow={rr} onSetRowName={srn} onAddTarget={at} onAddRow={ar}/>:tab==='report'?<Rep C={C} board={board} locked={locked} onChange={repChange} onSave={repSave}/>:<Sched C={C} board={board} locked={locked} onMode={schMode} onAssign={schAssign} onAddSlot={schAdd} onRemoveSlot={schRemove} onTimeChange={schTimeChange} onTimeSave={schTimeSave} onReset={schReset}/>}</div>
+          <div ref={boardRef}>{tab==='board'?<Bo board={board} admin={admin} locked={locked} pool={pool} celebrate={celebrate} onToggle={tc} onRenameTarget={rnt} onRemoveTarget={rt} onRemoveRow={rr} onSetRowName={srn} onAddTarget={at} onAddRow={ar}/>:tab==='report'?<Rep C={C} board={board} locked={locked} onChange={repChange} onSave={repSave} onWeekly={openWeekly}/>:<Sched C={C} board={board} locked={locked} onMode={schMode} onAssign={schAssign} onAddSlot={schAdd} onRemoveSlot={schRemove} onTimeChange={schTimeChange} onTimeSave={schTimeSave} onReset={schReset}/>}</div>
         }
 
         {tab==='board'&&<div style={{display:'flex',justifyContent:'center',gap:20,marginTop:18,color:C.sub,fontSize:12}}>
@@ -380,11 +396,31 @@ export default function App(){
           <button onClick={copySummary} style={{flex:1,background:'transparent',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:12,fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>{copied?'✓ הועתק':'📋 העתקה'}</button>
         </div>
       </Ov>}
+      {weekOpen&&<Ov onClose={()=>setWeekOpen(false)}>
+        <div style={{fontFamily:df,fontSize:20,fontWeight:800,marginBottom:2}}>{'📈 דיווח שבועי מצטבר'}</div>
+        <div style={{color:C.sub,fontSize:12,marginBottom:14}}>{weekData?`שבוע ${weekData.range} · ראשון–חמישי · אשראי (א׳) וגיוסים`:'טוען את נתוני השבוע…'}</div>
+        {weekLoading&&<div style={{textAlign:'center',padding:'24px 0',color:C.goldSoft,fontSize:14}}>{'⏳ מסכם את כל ימי השבוע…'}</div>}
+        {!weekLoading&&weekData&&(<div>
+          <div style={{display:'grid',gridTemplateColumns:'minmax(70px,1fr) 78px 64px',gap:6,alignItems:'center'}}>
+            <div style={{fontWeight:800,fontSize:12,color:C.goldSoft,textAlign:'right',paddingRight:4}}>{'בנקאי'}</div>
+            <div style={{fontWeight:800,fontSize:12,color:C.goldSoft,textAlign:'center'}}>{'אשראי (א׳)'}</div>
+            <div style={{fontWeight:800,fontSize:12,color:C.goldSoft,textAlign:'center'}}>{'גיוס'}</div>
+            {weekData.list.map((x,i)=>(<RF key={i}>
+              <div style={{background:C.panel2,borderRadius:9,padding:'11px 8px',textAlign:'right',fontWeight:700,fontSize:14,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{x.name}</div>
+              <div style={{background:C.panel2,borderRadius:9,padding:'11px 4px',textAlign:'center',fontWeight:800,fontSize:15,color:x.credit?C.gold:C.sub}}>{x.credit||0}</div>
+              <div style={{background:C.panel2,borderRadius:9,padding:'11px 4px',textAlign:'center',fontWeight:800,fontSize:15,color:x.recruit?'#7FCF9A':C.sub}}>{x.recruit||0}</div>
+            </RF>))}
+            <div style={{background:C.gold,color:C.panel2,borderRadius:9,padding:'12px 8px',textAlign:'right',fontWeight:800,fontSize:14,marginTop:4}}>{'סה״כ'}</div>
+            <div style={{background:C.gold,color:C.panel2,borderRadius:9,padding:'12px 4px',textAlign:'center',fontWeight:800,fontSize:16,marginTop:4}}>{weekData.totals.credit}</div>
+            <div style={{background:C.gold,color:C.panel2,borderRadius:9,padding:'12px 4px',textAlign:'center',fontWeight:800,fontSize:16,marginTop:4}}>{weekData.totals.recruit}</div>
+          </div>
+          <div style={{color:C.sub,fontSize:11,marginTop:12,textAlign:'center',lineHeight:1.6}}>{'מצטבר מכל דיווחי הביצועים בשבוע. סימוני ✅ נשארים יומיים. תיקון רטרואקטיבי — דרך אדמין בכל יום.'}</div>
+        </div>)}
+        <button onClick={()=>setWeekOpen(false)} style={{width:'100%',marginTop:16,background:'transparent',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:12,fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:ff}}>{'סגור'}</button>
+      </Ov>}
     </div>
   )
 }
-
-/* ══ BOARD ══ */
 function Bo({board,admin,locked,pool,celebrate,onToggle,onRenameTarget,onRemoveTarget,onRemoveRow,onSetRowName,onAddTarget,onAddRow}){
   /* תאים קומפקטיים לנייד */
   const NW=admin?108:110, CW=58
@@ -460,13 +496,14 @@ function Bo({board,admin,locked,pool,celebrate,onToggle,onRenameTarget,onRemoveT
 const RF=({children})=><>{children}</>
 
 /* ══ PERFORMANCE REPORT ══ */
-function Rep({C,board,locked,capture,onChange,onSave}){
+function Rep({C,board,locked,capture,onChange,onSave,onWeekly}){
   const f=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
   const rows=board.rows,rep=board.reports||{}
   const inp={width:'100%',boxSizing:'border-box',background:locked?'#EFEDE4':'#fff',border:`1px solid ${C.line}`,borderRadius:10,textAlign:'center',fontFamily:f,fontSize:17,fontWeight:800,color:C.ink,padding:'13px 4px',outline:'none'}
   const th={fontFamily:f,fontWeight:800,fontSize:13,color:C.ink,textAlign:'center',padding:'0 0 2px'}
   return(
     <div style={{background:C.board,borderRadius:20,padding:12,boxShadow:'0 12px 36px rgba(0,0,0,.4)'}}>
+      {!capture&&onWeekly&&<button onClick={onWeekly} style={{width:'100%',marginBottom:12,display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:'#12243a',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:'12px',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:f}}>{'📈 דיווח שבועי מצטבר'}</button>}
       <div style={{display:'grid',gridTemplateColumns:'minmax(80px,1fr) 92px 92px',gap:7,alignItems:'center'}}>
         <div style={{...th,textAlign:'right',paddingRight:6}}>{'בנקאי'}</div>
         <div style={th}>{'אשראי (א׳)'}</div>
