@@ -1,7 +1,7 @@
 name: Telegram board screenshot
 on:
-  schedule:
-    - cron: '0 6-14 * * 0-4'
+  repository_dispatch:
+    types: [hourly-send]
   workflow_dispatch: {}
 jobs:
   send:
