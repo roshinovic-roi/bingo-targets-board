@@ -12,6 +12,11 @@ const C={bg:'#0E1B2E',panel:'#13253C',panel2:'#0B1626',board:'#F6F2E7',ink:'#162
 const uid=()=>Math.random().toString(36).slice(2,9)
 const ts=()=>{const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const g=t=>p.find(x=>x.type===t).value;return`${g('year')}-${g('month')}-${g('day')}`}
 const kf=(b,d)=>`b:${b}:board:${d}`
+const kq=(b,y,q)=>`b:${b}:q:${y}-Q${q}`
+const qOf=d=>{const[y,m]=d.split('-').map(Number);const q=Math.floor((m-1)/3)+1;return{y,q}}
+const qLabel=(y,q)=>{const names={1:'ינואר–מרץ',2:'אפריל–יוני',3:'יולי–ספטמבר',4:'אוקטובר–דצמבר'};return`רבעון ${q} ${y} · ${names[q]}`}
+const qShift=(y,q,d)=>{let nq=q+d,ny=y;if(nq>4){nq=1;ny++}if(nq<1){nq=4;ny--}return{y:ny,q:nq}}
+const pctOf=(a,t)=>{const A=parseInt(a,10)||0,T=parseInt(t,10)||0;return T>0?Math.round(A/T*100):0}
 const pk=b=>`b:${b}:pool`
 const mk=b=>`b:${b}:meta`
 const bp=b=>`b:${b}:board:`
@@ -218,6 +223,12 @@ export default function App(){
   async function cm(fn){skr.current=true;const lt=(await sget(kf(branch,date)))||board;const nx=fn(JSON.parse(JSON.stringify(lt)));setBoard(nx);const ok=await sset(kf(branch,date),nx);setSaveErr(!ok);setTimeout(()=>{skr.current=false},1000)}
   function repChange(rid,field,val){if(date<ts()&&!admin)return;const v=(val||'').replace(/[^0-9]/g,'').slice(0,9);setBoard(b=>{const reports={...(b.reports||{})};reports[rid]={...(reports[rid]||{}),[field]:v};return {...b,reports}})}
   function repSave(){if(date<ts()&&!admin)return;setBoard(b=>{if(b){skr.current=true;sset(kf(branch,date),b).then(ok=>{setSaveErr(!ok);setTimeout(()=>{skr.current=false},800)})}return b})}
+  const[qy,setQy]=useState(()=>qOf(ts()).y);const[qq,setQq]=useState(()=>qOf(ts()).q)
+  const[qData,setQData]=useState(null);const[qLoading,setQLoading]=useState(false)
+  useEffect(()=>{let dead=false;setQLoading(true);sget(kq(branch,qy,qq)).then(v=>{if(dead)return;setQData(v&&typeof v==='object'?{targets:v.targets||{},actuals:v.actuals||{}}:{targets:{},actuals:{}});setQLoading(false)}).catch(()=>{if(!dead){setQData({targets:{},actuals:{}});setQLoading(false)}})
+    return()=>{dead=true}},[branch,qy,qq])
+  function qChange(name,field,val){if(!admin&&false)return;const v=(val||'').replace(/[^0-9]/g,'').slice(0,9);setQData(d=>{const nd={targets:{...(d?.targets||{})},actuals:{...(d?.actuals||{})}};nd[field==='target'?'targets':'actuals'][name]=v;return nd})}
+  function qSave(){setQData(d=>{if(d)sset(kq(branch,qy,qq),d).then(ok=>setSaveErr(!ok));return d})}
   const at=()=>cm(b=>{b.targets.push({id:uid(),label:`\u05d9\u05e2\u05d3 ${b.targets.length+1}`});return b})
   const rt=tid=>cm(b=>{b.targets=b.targets.filter(t=>t.id!==tid);Object.keys(b.cells).forEach(k=>{if(k.endsWith(`::${tid}`))delete b.cells[k]});return b})
   const rnt=(tid,l)=>cm(b=>{const t=b.targets.find(x=>x.id===tid);if(t)t.label=l;return b})
@@ -255,6 +266,16 @@ export default function App(){
   const[shotMenu,setShotMenu]=useState(false)
   const[rangeOpen,setRangeOpen]=useState(false);const[rangeFrom,setRangeFrom]=useState('');const[rangeTo,setRangeTo]=useState('')
   const[capW,setCapW]=useState(false);const capWRef=useRef(null);const[capWeekData,setCapWeekData]=useState(null)
+  const[capQ,setCapQ]=useState(false);const capQRef=useRef(null);const[capQData,setCapQData]=useState(null)
+  async function quotaShot(){
+    const uniq=[...new Set((board?.rows||[]).map(r=>(r.name||'').trim()).filter(Boolean))]
+    const T=qData?.targets||{},A=qData?.actuals||{}
+    const list=uniq.map(n=>({name:n,target:parseInt(T[n],10)||0,actual:parseInt(A[n],10)||0,pct:pctOf(A[n],T[n])}))
+    const tt=list.reduce((a,x)=>a+x.target,0),ta=list.reduce((a,x)=>a+x.actual,0)
+    setCapQData({list,totals:{target:tt,actual:ta,pct:pctOf(ta,tt)},label:qLabel(qy,qq)})
+    setCapQ(true);await new Promise(r=>setTimeout(r,200))
+    try{const el=capQRef.current;if(!el)throw new Error('render');const canvas=await html2canvas(el,{backgroundColor:'#0E1B2E',scale:2,useCORS:true});canvas.toBlob(async blob=>{if(!blob)return;const fn=`quota-${qy}Q${qq}.png`;const file=new File([blob],fn,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:`יעדי גיוס ${qy} Q${qq}`});return}catch(e){if(e.name==='AbortError')return}}const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=fn;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)},'image/png')}catch(e){alert('שגיאה בצילום המסך: '+e.message)}finally{setCapQ(false)}
+  }
   async function aggregateDays(days){
     const boards=await Promise.all(days.map(d=>sget(kf(branch,d)).catch(()=>null)))
     const order=[];const map={}
@@ -323,6 +344,7 @@ export default function App(){
           <button onClick={()=>setTab('board')} style={{flex:'1 1 auto',minWidth:104,background:tab==='board'?C.gold:C.panel,color:tab==='board'?C.panel2:C.goldSoft,border:`1px solid ${tab==='board'?C.gold:C.line}`,borderRadius:12,padding:'11px 8px',fontWeight:800,fontSize:13.5,cursor:'pointer',fontFamily:ff}}>{'🎯 לוח יעדים'}</button>
           <button onClick={()=>setTab('report')} style={{flex:'1 1 auto',minWidth:104,background:tab==='report'?C.gold:C.panel,color:tab==='report'?C.panel2:C.goldSoft,border:`1px solid ${tab==='report'?C.gold:C.line}`,borderRadius:12,padding:'11px 8px',fontWeight:800,fontSize:13.5,cursor:'pointer',fontFamily:ff}}>{'📊 דיווח ביצועים'}</button>
           <button onClick={()=>setTab('sched')} style={{flex:'1 1 auto',minWidth:104,background:tab==='sched'?C.gold:C.panel,color:tab==='sched'?C.panel2:C.goldSoft,border:`1px solid ${tab==='sched'?C.gold:C.line}`,borderRadius:12,padding:'11px 8px',fontWeight:800,fontSize:13.5,cursor:'pointer',fontFamily:ff}}>{'🪑 עמדה סגורה'}</button>
+          <button onClick={()=>setTab('quota')} style={{flex:'1 1 auto',minWidth:104,background:tab==='quota'?C.gold:C.panel,color:tab==='quota'?C.panel2:C.goldSoft,border:`1px solid ${tab==='quota'?C.gold:C.line}`,borderRadius:12,padding:'11px 8px',fontWeight:800,fontSize:13.5,cursor:'pointer',fontFamily:ff}}>{'🎯 יעדי גיוס'}</button>
         </div>
 
 
@@ -332,7 +354,7 @@ export default function App(){
 
         {loading?<div style={{textAlign:'center',padding:60,color:C.sub}}>{'טוען…'}</div>:!board?
           <div style={{background:C.board,borderRadius:18,color:C.ink,padding:48,textAlign:'center'}}><div style={{fontSize:44,marginBottom:10}}>{'🗓️'}</div><div style={{fontWeight:700,fontSize:17}}>{'אין לוח לתאריך זה'}</div><div style={{color:C.sub,fontSize:14,marginTop:6}}>{'תאריך עבר שלא הוגדר בו לוח.'}</div></div>:
-          <div ref={boardRef}>{tab==='board'?<Bo board={board} admin={admin} locked={locked} pool={pool} celebrate={celebrate} onToggle={tc} onRenameTarget={rnt} onRemoveTarget={rt} onRemoveRow={rr} onSetRowName={srn} onAddTarget={at} onAddRow={ar}/>:tab==='report'?<Rep C={C} board={board} locked={locked} onChange={repChange} onSave={repSave} onWeekly={openWeekly}/>:<Sched C={C} board={board} locked={locked} onMode={schMode} onAssign={schAssign} onAddSlot={schAdd} onRemoveSlot={schRemove} onTimeChange={schTimeChange} onTimeSave={schTimeSave} onReset={schReset}/>}</div>
+          <div ref={boardRef}>{tab==='board'?<Bo board={board} admin={admin} locked={locked} pool={pool} celebrate={celebrate} onToggle={tc} onRenameTarget={rnt} onRemoveTarget={rt} onRemoveRow={rr} onSetRowName={srn} onAddTarget={at} onAddRow={ar}/>:tab==='report'?<Rep C={C} board={board} locked={locked} onChange={repChange} onSave={repSave} onWeekly={openWeekly}/>:tab==='sched'?<Sched C={C} board={board} locked={locked} onMode={schMode} onAssign={schAssign} onAddSlot={schAdd} onRemoveSlot={schRemove} onTimeChange={schTimeChange} onTimeSave={schTimeSave} onReset={schReset}/>:<Quota C={C} board={board} data={qData} loading={qLoading} y={qy} q={qq} onShift={dv=>{const n=qShift(qy,qq,dv);setQy(n.y);setQq(n.q)}} onChange={qChange} onSave={qSave}/>}</div>
         }
 
         {tab==='board'&&<div style={{display:'flex',justifyContent:'center',gap:20,marginTop:18,color:C.sub,fontSize:12}}>
@@ -353,8 +375,15 @@ export default function App(){
             <button onClick={()=>{setShotMenu(false);weekShot()}} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:'#12243a',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:14,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'📈 דיווח שבועי מצטבר'}</button>
             <button onClick={()=>{setShotMenu(false);schedShot()}} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:'#12243a',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:14,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'🪑 לו״ז עמדה סגורה'}</button>
             <button onClick={openRange} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:'#12243a',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:14,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'📅 דיווח מתאריך לתאריך'}</button>
+            <button onClick={()=>{setShotMenu(false);quotaShot()}} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:'#12243a',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:12,padding:14,fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:ff}}>{'🎯 יעדי גיוס (רבעוני)'}</button>
           </div>
         </Ov>}
+
+        {capQ&&capQData&&<div ref={capQRef} aria-hidden dir="rtl" style={{position:'absolute',left:-99999,top:0,width:'fit-content',background:'#0E1B2E',padding:22,boxSizing:'border-box'}}>
+          <div style={{color:C.gold,fontFamily:df,fontWeight:800,fontSize:23,marginBottom:4,textAlign:'right'}}>{'🎯 יעדי גיוס'}</div>
+          <div style={{color:C.goldSoft,fontSize:14,marginBottom:14,textAlign:'right'}}>{`${meta.name} · ${capQData.label}`}</div>
+          <CapQuota C={C} data={capQData}/>
+        </div>}
 
         {rangeOpen&&<Ov onClose={()=>setRangeOpen(false)}>
           <div style={{fontFamily:df,fontSize:20,fontWeight:800,marginBottom:4}}>{'📅 דיווח לפי טווח תאריכים'}</div>
@@ -628,6 +657,75 @@ function Sched({C,board,locked,onMode,onAssign,onAddSlot,onRemoveSlot,onTimeChan
       </div>
       {mode==='90'&&!locked&&<button onClick={onAddSlot} style={{width:'100%',marginTop:10,display:'flex',alignItems:'center',justifyContent:'center',gap:6,background:'transparent',color:'#8A6B22',border:`1.5px dashed ${C.gold}`,borderRadius:12,padding:'12px',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:f}}>{'＋ הוסף סלוט'}</button>}
       <div style={{color:C.ink,opacity:.6,fontSize:12,marginTop:14,textAlign:'center',fontFamily:f}}>{locked?'🔒 יום עבר · לצפייה בלבד.':'שבצו בנקאי לכל סלוט · ניתן לערוך את השעות ידנית (↺ לאיפוס) · נשמר אוטומטית.'}</div>
+    </div>
+  )
+}
+
+/* ══ QUARTERLY RECRUITMENT TARGETS ══ */
+function Quota({C,board,data,loading,y,q,onShift,onChange,onSave}){
+  const f=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
+  const names=(board.rows||[]).map(r=>(r.name||'').trim()).filter(Boolean)
+  const uniq=[...new Set(names)]
+  const T=data?.targets||{},A=data?.actuals||{}
+  const inp={width:'100%',boxSizing:'border-box',background:'#fff',border:`1px solid ${C.line}`,borderRadius:10,textAlign:'center',fontFamily:f,fontSize:17,fontWeight:800,color:C.ink,padding:'13px 4px',outline:'none'}
+  const th={fontFamily:f,fontWeight:800,fontSize:13,color:C.ink,textAlign:'center',padding:'0 0 2px'}
+  const tot=uniq.reduce((a,n)=>a+(parseInt(T[n],10)||0),0)
+  const act=uniq.reduce((a,n)=>a+(parseInt(A[n],10)||0),0)
+  const totPct=pctOf(act,tot)
+  const pcol=p=>p>=100?'#2E7D46':p>=50?'#8A6B22':'#B4453C'
+  return(
+    <div style={{background:C.board,borderRadius:20,padding:12,boxShadow:'0 12px 36px rgba(0,0,0,.4)'}}>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+        <button onClick={()=>onShift(-1)} aria-label="רבעון קודם" style={{flexShrink:0,width:40,height:40,background:'#12243a',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:10,fontSize:18,fontWeight:800,cursor:'pointer'}}>{'›'}</button>
+        <div style={{flex:1,textAlign:'center',fontFamily:f,fontWeight:800,fontSize:14,color:C.ink,background:'#FBF3D9',border:`1px solid ${C.gold}`,borderRadius:10,padding:'11px 6px'}}>{qLabel(y,q)}</div>
+        <button onClick={()=>onShift(1)} aria-label="רבעון הבא" style={{flexShrink:0,width:40,height:40,background:'#12243a',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:10,fontSize:18,fontWeight:800,cursor:'pointer'}}>{'‹'}</button>
+      </div>
+      {loading&&<div style={{textAlign:'center',padding:'20px 0',color:C.ink,opacity:.6,fontFamily:f,fontSize:14}}>{'⏳ טוען…'}</div>}
+      {!loading&&uniq.length===0&&<div style={{textAlign:'center',padding:'20px 0',color:C.ink,opacity:.6,fontFamily:f,fontSize:13}}>{'אין בנקאים מוגדרים ליום זה.'}</div>}
+      {!loading&&uniq.length>0&&<div style={{display:'grid',gridTemplateColumns:'minmax(74px,1fr) 74px 74px 62px',gap:6,alignItems:'center'}}>
+        <div style={{...th,textAlign:'right',paddingRight:6}}>{'בנקאי'}</div>
+        <div style={th}>{'יעד'}</div>
+        <div style={th}>{'ביצוע'}</div>
+        <div style={th}>{'%'}</div>
+        {uniq.map(n=>{const p=pctOf(A[n],T[n]);return(<RF key={n}>
+          <div style={{background:'#FBFAF3',border:`1px solid ${C.line}`,borderRadius:10,padding:'13px 8px',textAlign:'right',fontFamily:f,fontWeight:800,fontSize:14,color:C.ink,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{n}</div>
+          <input type="tel" inputMode="numeric" value={T[n]||''} onChange={e=>onChange(n,'target',e.target.value)} onBlur={onSave} placeholder="0" style={inp}/>
+          <input type="tel" inputMode="numeric" value={A[n]||''} onChange={e=>onChange(n,'actual',e.target.value)} onBlur={onSave} placeholder="0" style={inp}/>
+          <div style={{background:'#FBFAF3',border:`1px solid ${C.line}`,borderRadius:10,padding:'13px 2px',textAlign:'center',fontFamily:f,fontWeight:800,fontSize:14,color:pcol(p)}}>{p}%</div>
+        </RF>)})}
+        <div style={{background:C.gold,borderRadius:10,padding:'13px 8px',textAlign:'right',fontFamily:f,fontWeight:800,fontSize:14,color:C.panel2,marginTop:4}}>{'סה״כ'}</div>
+        <div style={{background:C.gold,borderRadius:10,padding:'13px 2px',textAlign:'center',fontFamily:f,fontWeight:800,fontSize:15,color:C.panel2,marginTop:4}}>{tot}</div>
+        <div style={{background:C.gold,borderRadius:10,padding:'13px 2px',textAlign:'center',fontFamily:f,fontWeight:800,fontSize:15,color:C.panel2,marginTop:4}}>{act}</div>
+        <div style={{background:C.gold,borderRadius:10,padding:'13px 2px',textAlign:'center',fontFamily:f,fontWeight:800,fontSize:14,color:C.panel2,marginTop:4}}>{totPct}%</div>
+      </div>}
+      <div style={{color:C.ink,opacity:.6,fontSize:12,marginTop:12,textAlign:'center',fontFamily:f}}>{'יעדי גיוס רבעוניים · אחוז הביצוע מחושב אוטומטית · נשמר אוטומטית.'}</div>
+    </div>
+  )
+}
+
+/* ══ QUARTERLY CAPTURE ══ */
+function CapQuota({C,data}){
+  const f=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
+  const cell={padding:'12px 6px',fontFamily:f,fontWeight:800,fontSize:15,textAlign:'center'}
+  const pcol=p=>p>=100?'#2E7D46':p>=50?'#8A6B22':'#B4453C'
+  return(
+    <div style={{background:C.board,borderRadius:20,padding:14,boxShadow:'0 12px 36px rgba(0,0,0,.4)',width:400}}>
+      <div style={{display:'grid',gridTemplateColumns:'minmax(96px,1fr) 80px 80px 68px',gap:6,alignItems:'center'}}>
+        <div style={{...cell,textAlign:'right',color:C.ink,fontSize:13,paddingBottom:2}}>{'בנקאי'}</div>
+        <div style={{...cell,color:C.ink,fontSize:13,paddingBottom:2}}>{'יעד'}</div>
+        <div style={{...cell,color:C.ink,fontSize:13,paddingBottom:2}}>{'ביצוע'}</div>
+        <div style={{...cell,color:C.ink,fontSize:13,paddingBottom:2}}>{'%'}</div>
+        {data.list.map((x,i)=>(<RF key={i}>
+          <div style={{background:'#FBFAF3',border:`1px solid ${C.boardLine}`,borderRadius:10,...cell,textAlign:'right',color:C.ink,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{x.name}</div>
+          <div style={{background:'#FBFAF3',border:`1px solid ${C.boardLine}`,borderRadius:10,...cell,color:C.ink}}>{x.target}</div>
+          <div style={{background:'#FBFAF3',border:`1px solid ${C.boardLine}`,borderRadius:10,...cell,color:C.ink}}>{x.actual}</div>
+          <div style={{background:'#FBFAF3',border:`1px solid ${C.boardLine}`,borderRadius:10,...cell,color:pcol(x.pct)}}>{x.pct}%</div>
+        </RF>))}
+        <div style={{background:C.gold,borderRadius:10,...cell,textAlign:'right',color:C.panel2}}>{'סה״כ'}</div>
+        <div style={{background:C.gold,borderRadius:10,...cell,color:C.panel2}}>{data.totals.target}</div>
+        <div style={{background:C.gold,borderRadius:10,...cell,color:C.panel2}}>{data.totals.actual}</div>
+        <div style={{background:C.gold,borderRadius:10,...cell,color:C.panel2}}>{data.totals.pct}%</div>
+      </div>
     </div>
   )
 }
