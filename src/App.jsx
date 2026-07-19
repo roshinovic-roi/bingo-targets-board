@@ -229,10 +229,10 @@ export default function App(){
   const[qData,setQData]=useState(null);const[qLoading,setQLoading]=useState(false);const[qTick,setQTick]=useState(0)
   useEffect(()=>{let dead=false;setQLoading(true);sget(kq(branch,qy,qq)).then(v=>{if(dead)return;setQData(v&&typeof v==='object'?{targets:v.targets||{},actuals:v.actuals||{},names:Array.isArray(v.names)?v.names:[]}:{targets:{},actuals:{},names:[]});setQLoading(false);setQTick(t=>t+1)}).catch(()=>{if(!dead){setQData({targets:{},actuals:{},names:[]});setQLoading(false)}})
     return()=>{dead=true}},[branch,qy,qq])
-  function qChange(name,field,val){const v=(val||'').replace(/[^0-9]/g,'').slice(0,9);setQData(d=>{const nd={targets:{...(d?.targets||{})},actuals:{...(d?.actuals||{})},names:[...(d?.names||[])]};nd[field==='target'?'targets':'actuals'][name]=v;return nd})}
-  function qSave(){setQData(d=>{if(d)sset(kq(branch,qy,qq),d).then(ok=>setSaveErr(!ok));return d});setQTick(t=>t+1)}
-  function qAddName(name){if(!name)return;setQData(d=>{const nd={targets:{...(d?.targets||{})},actuals:{...(d?.actuals||{})},names:[...(d?.names||[])]};if(!nd.names.includes(name))nd.names.push(name);sset(kq(branch,qy,qq),nd).then(ok=>setSaveErr(!ok));return nd});setQTick(t=>t+1)}
-  function qRemoveName(name){setQData(d=>{const nd={targets:{...(d?.targets||{})},actuals:{...(d?.actuals||{})},names:(d?.names||[]).filter(x=>x!==name)};delete nd.targets[name];delete nd.actuals[name];sset(kq(branch,qy,qq),nd).then(ok=>setSaveErr(!ok));return nd});setQTick(t=>t+1)}
+  function qChange(name,field,val){if(!admin)return;const v=(val||'').replace(/[^0-9]/g,'').slice(0,9);setQData(d=>{const nd={targets:{...(d?.targets||{})},actuals:{...(d?.actuals||{})},names:[...(d?.names||[])]};nd[field==='target'?'targets':'actuals'][name]=v;return nd})}
+  function qSave(){if(!admin)return;setQData(d=>{if(d)sset(kq(branch,qy,qq),d).then(ok=>setSaveErr(!ok));return d});setQTick(t=>t+1)}
+  function qAddName(name){if(!admin||!name)return;setQData(d=>{const nd={targets:{...(d?.targets||{})},actuals:{...(d?.actuals||{})},names:[...(d?.names||[])]};if(!nd.names.includes(name))nd.names.push(name);sset(kq(branch,qy,qq),nd).then(ok=>setSaveErr(!ok));return nd});setQTick(t=>t+1)}
+  function qRemoveName(name){if(!admin)return;setQData(d=>{const nd={targets:{...(d?.targets||{})},actuals:{...(d?.actuals||{})},names:(d?.names||[]).filter(x=>x!==name)};delete nd.targets[name];delete nd.actuals[name];sset(kq(branch,qy,qq),nd).then(ok=>setSaveErr(!ok));return nd});setQTick(t=>t+1)}
   const at=()=>cm(b=>{b.targets.push({id:uid(),label:`\u05d9\u05e2\u05d3 ${b.targets.length+1}`});return b})
   const rt=tid=>cm(b=>{b.targets=b.targets.filter(t=>t.id!==tid);Object.keys(b.cells).forEach(k=>{if(k.endsWith(`::${tid}`))delete b.cells[k]});return b})
   const rnt=(tid,l)=>cm(b=>{const t=b.targets.find(x=>x.id===tid);if(t)t.label=l;return b})
@@ -358,7 +358,7 @@ export default function App(){
 
         {loading?<div style={{textAlign:'center',padding:60,color:C.sub}}>{'טוען…'}</div>:!board?
           <div style={{background:C.board,borderRadius:18,color:C.ink,padding:48,textAlign:'center'}}><div style={{fontSize:44,marginBottom:10}}>{'🗓️'}</div><div style={{fontWeight:700,fontSize:17}}>{'אין לוח לתאריך זה'}</div><div style={{color:C.sub,fontSize:14,marginTop:6}}>{'תאריך עבר שלא הוגדר בו לוח.'}</div></div>:
-          <div ref={boardRef}>{tab==='board'?<Bo board={board} admin={admin} locked={locked} pool={pool} celebrate={celebrate} onToggle={tc} onRenameTarget={rnt} onRemoveTarget={rt} onRemoveRow={rr} onSetRowName={srn} onAddTarget={at} onAddRow={ar}/>:tab==='report'?<Rep C={C} board={board} locked={locked} onChange={repChange} onSave={repSave} onWeekly={openWeekly}/>:tab==='sched'?<Sched C={C} board={board} locked={locked} onMode={schMode} onAssign={schAssign} onAddSlot={schAdd} onRemoveSlot={schRemove} onTimeChange={schTimeChange} onTimeSave={schTimeSave} onReset={schReset}/>:<Quota C={C} board={board} pool={pool} data={qData} loading={qLoading} y={qy} q={qq} tick={qTick} onShift={dv=>{const n=qShift(qy,qq,dv);setQy(n.y);setQq(n.q)}} onChange={qChange} onSave={qSave} onAddName={qAddName} onRemoveName={qRemoveName}/>}</div>
+          <div ref={boardRef}>{tab==='board'?<Bo board={board} admin={admin} locked={locked} pool={pool} celebrate={celebrate} onToggle={tc} onRenameTarget={rnt} onRemoveTarget={rt} onRemoveRow={rr} onSetRowName={srn} onAddTarget={at} onAddRow={ar}/>:tab==='report'?<Rep C={C} board={board} locked={locked} onChange={repChange} onSave={repSave} onWeekly={openWeekly}/>:tab==='sched'?<Sched C={C} board={board} locked={locked} onMode={schMode} onAssign={schAssign} onAddSlot={schAdd} onRemoveSlot={schRemove} onTimeChange={schTimeChange} onTimeSave={schTimeSave} onReset={schReset}/>:<Quota C={C} board={board} pool={pool} admin={admin} data={qData} loading={qLoading} y={qy} q={qq} tick={qTick} onShift={dv=>{const n=qShift(qy,qq,dv);setQy(n.y);setQq(n.q)}} onChange={qChange} onSave={qSave} onAddName={qAddName} onRemoveName={qRemoveName}/>}</div>
         }
 
         {tab==='board'&&<div style={{display:'flex',justifyContent:'center',gap:20,marginTop:18,color:C.sub,fontSize:12}}>
@@ -666,7 +666,7 @@ function Sched({C,board,locked,onMode,onAssign,onAddSlot,onRemoveSlot,onTimeChan
 }
 
 /* ══ QUARTERLY RECRUITMENT TARGETS ══ */
-function Quota({C,board,pool,data,loading,y,q,tick,onShift,onChange,onSave,onAddName,onRemoveName}){
+function Quota({C,board,pool,admin,data,loading,y,q,tick,onShift,onChange,onSave,onAddName,onRemoveName}){
   const f=`'Heebo','Segoe UI',system-ui,Arial,sans-serif`
   const all=qNames(board,data)
   const[order,setOrder]=useState([])
@@ -675,7 +675,7 @@ function Quota({C,board,pool,data,loading,y,q,tick,onShift,onChange,onSave,onAdd
   const T=data?.targets||{},A=data?.actuals||{}
   const boardNames=new Set((board?.rows||[]).map(r=>(r.name||'').trim()))
   const avail=(pool||[]).filter(n=>n&&!all.includes(n))
-  const inp={width:'100%',boxSizing:'border-box',background:'#fff',border:`1px solid ${C.line}`,borderRadius:10,textAlign:'center',fontFamily:f,fontSize:17,fontWeight:800,color:C.ink,padding:'13px 4px',outline:'none'}
+  const inp={width:'100%',boxSizing:'border-box',background:admin?'#fff':'#EFEDE4',border:`1px solid ${C.line}`,borderRadius:10,textAlign:'center',fontFamily:f,fontSize:17,fontWeight:800,color:C.ink,padding:'13px 4px',outline:'none'}
   const th={fontFamily:f,fontWeight:800,fontSize:13,color:C.ink,textAlign:'center',padding:'0 0 2px'}
   const tot=uniq.reduce((a,n)=>a+(parseInt(T[n],10)||0),0)
   const act=uniq.reduce((a,n)=>a+(parseInt(A[n],10)||0),0)
@@ -689,7 +689,7 @@ function Quota({C,board,pool,data,loading,y,q,tick,onShift,onChange,onSave,onAdd
         <button onClick={()=>onShift(1)} aria-label="רבעון הבא" style={{flexShrink:0,width:40,height:40,background:'#12243a',color:C.gold,border:`1.5px solid ${C.gold}`,borderRadius:10,fontSize:18,fontWeight:800,cursor:'pointer'}}>{'‹'}</button>
       </div>
       {loading&&<div style={{textAlign:'center',padding:'20px 0',color:C.ink,opacity:.6,fontFamily:f,fontSize:14}}>{'⏳ טוען…'}</div>}
-      {!loading&&uniq.length===0&&<div style={{textAlign:'center',padding:'20px 0',color:C.ink,opacity:.6,fontFamily:f,fontSize:13}}>{'אין בנקאים. הוסיפו מהרשימה למטה.'}</div>}
+      {!loading&&uniq.length===0&&<div style={{textAlign:'center',padding:'20px 0',color:C.ink,opacity:.6,fontFamily:f,fontSize:13}}>{admin?'אין בנקאים. הוסיפו מהרשימה למטה.':'אין בנקאים מוגדרים לרבעון זה.'}</div>}
       {!loading&&uniq.length>0&&<div style={{display:'grid',gridTemplateColumns:'minmax(70px,1fr) 68px 68px 56px 30px',gap:5,alignItems:'center'}}>
         <div style={{...th,textAlign:'right',paddingRight:6}}>{'בנקאי'}</div>
         <div style={th}>{'יעד'}</div>
@@ -698,10 +698,10 @@ function Quota({C,board,pool,data,loading,y,q,tick,onShift,onChange,onSave,onAdd
         <div/>
         {uniq.map(n=>{const p=pctOf(A[n],T[n]);const extra=!boardNames.has(n);return(<RF key={n}>
           <div style={{background:'#FBFAF3',border:`1px solid ${C.line}`,borderRadius:10,padding:'13px 8px',textAlign:'right',fontFamily:f,fontWeight:800,fontSize:14,color:C.ink,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{n}</div>
-          <input type="tel" inputMode="numeric" value={T[n]||''} onChange={e=>onChange(n,'target',e.target.value)} onBlur={onSave} placeholder="0" style={inp}/>
-          <input type="tel" inputMode="numeric" value={A[n]||''} onChange={e=>onChange(n,'actual',e.target.value)} onBlur={onSave} placeholder="0" style={inp}/>
+          {admin?<input type="tel" inputMode="numeric" value={T[n]||''} onChange={e=>onChange(n,'target',e.target.value)} onBlur={onSave} placeholder="0" style={inp}/>:<div style={{...inp,padding:'13px 4px'}}>{T[n]||0}</div>}
+          {admin?<input type="tel" inputMode="numeric" value={A[n]||''} onChange={e=>onChange(n,'actual',e.target.value)} onBlur={onSave} placeholder="0" style={inp}/>:<div style={{...inp,padding:'13px 4px'}}>{A[n]||0}</div>}
           <div style={{background:'#FBFAF3',border:`1px solid ${C.line}`,borderRadius:10,padding:'13px 2px',textAlign:'center',fontFamily:f,fontWeight:800,fontSize:14,color:pcol(p)}}>{p}%</div>
-          {extra?<button onClick={()=>onRemoveName(n)} aria-label={`הסר ${n}`} title="הסר מהטבלה" style={{width:28,height:28,background:'transparent',color:'#B4453C',border:`1px solid ${C.boardLine}`,borderRadius:8,fontSize:16,fontWeight:800,lineHeight:1,cursor:'pointer'}}>{'−'}</button>:<div/>}
+          {extra&&admin?<button onClick={()=>onRemoveName(n)} aria-label={`הסר ${n}`} title="הסר מהטבלה" style={{width:28,height:28,background:'transparent',color:'#B4453C',border:`1px solid ${C.boardLine}`,borderRadius:8,fontSize:16,fontWeight:800,lineHeight:1,cursor:'pointer'}}>{'−'}</button>:<div/>}
         </RF>)})}
         <div style={{background:C.gold,borderRadius:10,padding:'13px 8px',textAlign:'right',fontFamily:f,fontWeight:800,fontSize:14,color:C.panel2,marginTop:4}}>{'סה״כ'}</div>
         <div style={{background:C.gold,borderRadius:10,padding:'13px 2px',textAlign:'center',fontFamily:f,fontWeight:800,fontSize:15,color:C.panel2,marginTop:4}}>{tot}</div>
@@ -709,13 +709,13 @@ function Quota({C,board,pool,data,loading,y,q,tick,onShift,onChange,onSave,onAdd
         <div style={{background:C.gold,borderRadius:10,padding:'13px 2px',textAlign:'center',fontFamily:f,fontWeight:800,fontSize:14,color:C.panel2,marginTop:4}}>{totPct}%</div>
         <div style={{marginTop:4}}/>
       </div>}
-      {!loading&&avail.length>0&&<div style={{marginTop:12,display:'flex',alignItems:'center',gap:8}}>
+      {!loading&&admin&&avail.length>0&&<div style={{marginTop:12,display:'flex',alignItems:'center',gap:8}}>
         <select value="" onChange={e=>{onAddName(e.target.value);e.target.value=''}} style={{flex:1,background:'#fff',border:`1.5px dashed ${C.gold}`,borderRadius:12,padding:'12px 10px',fontFamily:f,fontSize:14,fontWeight:700,color:C.ink,outline:'none',direction:'rtl',cursor:'pointer'}}>
           <option value="">{'＋ הוסף בנקאי מהרשימה המלאה'}</option>
           {avail.map(n=><option key={n} value={n}>{n}</option>)}
         </select>
       </div>}
-      <div style={{color:C.ink,opacity:.6,fontSize:12,marginTop:12,textAlign:'center',fontFamily:f}}>{'יעדי גיוס רבעוניים · ממוין לפי אחוז ביצוע · נשמר אוטומטית.'}</div>
+      <div style={{color:C.ink,opacity:.6,fontSize:12,marginTop:12,textAlign:'center',fontFamily:f}}>{admin?'יעדי גיוס רבעוניים · ממוין לפי אחוז ביצוע · נשמר אוטומטית.':'🔒 יעדי גיוס · לצפייה בלבד · עדכון דרך מצב אדמין.'}</div>
     </div>
   )
 }
